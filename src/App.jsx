@@ -10,7 +10,7 @@ import './App.css';
 
 function App() {
   return (
-    <>
+    <> {/* React Fragment */}
       <Navbar /> {/* Navbar remains outside Routes to be on every page */}
       <div className="container">
         <Routes> {/* Defines where your page content will be rendered */}
