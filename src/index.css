@@ -1,4 +1,7 @@
 :root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -28,8 +31,30 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-}
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif; /* Example: Keep or change your font */
+  line-height: 1.6; /* Keep or change your line-height */
+  font-weight: 400; /* Keep or change */
 
+  color-scheme: light dark; /* Keep or change */
+  color: rgba(255, 255, 255, 0.87); /* Keep or change */
+  background-color: #242424; /* Keep or change */
+
+  font-synthesis: none; /* Keep or change */
+  text-rendering: optimizeLegibility; /* Keep or change */
+  -webkit-font-smoothing: antialiased; /* Keep or change */
+  -moz-osx-font-smoothing: grayscale; /* Keep or change */
+}
+  
+  
+
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+
+}
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
