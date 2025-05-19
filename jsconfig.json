@@ -1,0 +1,11 @@
+// jsconfig.json (in the root of aetherpro-website)
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "jsx": "react-jsx" // Good to have for React projects
+  },
+  "include": ["src"]
+}
