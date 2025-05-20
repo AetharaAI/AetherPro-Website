@@ -1,5 +1,5 @@
 // src/services/api.js
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'; // Your FastAPI server URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://66.179.241.125:8000'; // Your FastAPI server URL
 
 async function fetchApi(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
