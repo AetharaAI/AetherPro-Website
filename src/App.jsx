@@ -14,14 +14,16 @@ import SettingsPage from './pages/SettingsPage'; // Import your settings page
 // Basic Layout component if you want Navbar/Footer on multiple pages
 const MainLayout = () => (
   <div className="min-h-screen flex bg-background text-foreground"> {/* Sidebar on the left */}
-    <Sidebar /> 
-    {/* Content area to the right of sidebar */}
-    <div className="flex flex-col flex-grow"> {/* Adjust margin-left based on sidebar width */}
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
-        <Outlet /> {/* Child routes will render here */}
-      </main>
-      <Footer />
+    <div className="flex">
+      <Sidebar />
+      {/* Content area to the right of sidebar */}
+      <div className="flex flex-col flex-grow ml-64"> {/* Adjust margin-left based on sidebar width */}
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
+          <Outlet /> {/* Child routes will render here */}
+        </main>
+        <Footer />
+      </div>
     </div>
   </div>
 );
