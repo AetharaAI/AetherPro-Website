@@ -15,6 +15,11 @@ import SettingsPage from './pages/SettingsPage'; // Import your settings page
 const MainLayout = () => {
   return (
     <div className="min-h-screen bg-background text-foreground"> {/* Sidebar locked left */}
+      <div className="flex">
+        {/* Sidebar */}
+        {/* You can use a fixed width or flex-grow depending on your design */}
+        {/* Adjust the width of the sidebar as needed */}
+        {/* <Sidebar className="w-64" /> */}
       
         <Sidebar />
         {/* Main content Area */}
@@ -25,6 +30,7 @@ const MainLayout = () => {
           </main>
           <Footer />
         </div>
+      </div>
     </div>
   );
 };
