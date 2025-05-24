@@ -18,7 +18,7 @@ const MainLayout = () => {
     {/* Sidebar locked left */}
     <Sidebar />
     {/* Main content Area */}
-    <div className="flex flex-col flex-grow"> {/* Adjust margin-left based on sidebar width */}
+    <div className="flex flex-row flex-grow"> {/* Adjust margin-left based on sidebar width */}
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
         <Outlet /> {/* Child routes will render here */}
