@@ -6,7 +6,7 @@ import Navbar from './components/layout/Navbar'; // Assuming you create this
 import Footer from './components/layout/Footer'; // Assuming you create this
 import NotFoundPage from './pages/NotFoundPage';
 import Sidebar from './components/layout/Sidebar'; // Assuming you create this
-import AdminDashboardPage from './pages/AdminDashboardPage'; // Import your admin dashboard page
+
 import MemoryExplorerPage from './pages/MemoryExplorerPage'; // Import your memory explorer page
 import SettingsPage from './pages/SettingsPage'; // Import your settings page
 // Import other pages as you create them
