@@ -7,6 +7,11 @@
  @tailwind components;
  @tailwind utilities;
 
+ body {
+  background-color: #0d0d0d;
+  color: #f0f0f0;
+ }
+
  @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
