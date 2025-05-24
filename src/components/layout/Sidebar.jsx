@@ -15,6 +15,8 @@ export default function Sidebar() {
         <div className="space-x-4"></div>
         <li><Link to="/login" className="hover:text-blue-400">Login</Link></li>
         <li><Link to="/signup" className="hover:text-blue-400">Sign Up</Link></li>
+        <li><Link to="/logout" className="hover:text-blue-400">Logout</Link></li>
+        <li><Link to="/dashboard" className="hover:text-blue-400">Dashboard</Link></li>
       </ul>
     </div>
   );

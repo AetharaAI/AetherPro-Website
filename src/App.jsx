@@ -8,6 +8,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import Sidebar from './components/layout/Sidebar'; // Assuming you create this
 import LoginForm from './components/common/LoginForm';
 import SignupForm from './components/common/SignupForm'; // Assuming you create this
+import DashboardPage from './pages/DashboardPage';
+import LogoutButton from './components/common/LogoutButton'; // Assuming you create this
 
 //import AdminDashboardPage from './pages/AdminDashboardPage'; // Import your admin dashboard page
 
@@ -44,12 +46,25 @@ function App() {
         <Route path="/memory" element={<MemoryExplorerPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/signup" element={<SignupForm />} /> {/* Sign-up page */}
+        <Route path="/logout" element={<LogoutButton />} /> {/* Logout button */}
+        
+        {/* Add other routes as you create them */}
+        {/* <Route path="/chat" element={<ChatPage />} /> */}
+        {/* <Route path="/admin" element={<AdminDashboardPage />} /> */}
+        {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
+        {/* <Route path="/settings" element={<SettingsPage />} /> */}
 
         {/* Add other routes for Admin, Memory, Settings later */}
         {/* <Route path="/admin" element={<AdminDashboardPage />} /> */}
         {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
         {/* <Route path="/settings" element={<SettingsPage />} /> */}
         <Route path="/login" element={<LoginForm />} /> {/* Login page */}
+        <Route path="/dashboard" element={<DashboardPage />} /> {/* Dashboard page */}
+        
+        {/* Add more routes as you create them */}
+        {/* <Route path="/chat" element={<ChatPage />} /> */}
+        {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
+        {/* <Route path="/settings" element={<SettingsPage />} /> */}
         {/* Add more routes as you create them */}
         
         {/* Catch-all for 404 */}
