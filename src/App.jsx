@@ -32,7 +32,7 @@ function App() {
       <Route element={<MainLayout />}> {/* Use a layout for pages with Navbar/Footer */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/chat" element={<ChatPage />} />
-        <Route path="/admin" element={<AdminDashboardPage />} />
+        {/* <Route path="/admin" element={<AdminDashboardPage />} /> */}
         
         <Route path="/memory" element={<MemoryExplorerPage />} />
         <Route path="/settings" element={<SettingsPage />} />
