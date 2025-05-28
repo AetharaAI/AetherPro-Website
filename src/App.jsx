@@ -15,24 +15,29 @@ import LogoutButton from './components/common/LogoutButton'; // Assuming you cre
 
 import MemoryExplorerPage from './pages/MemoryExplorerPage'; // Import your memory explorer page
 import SettingsPage from './pages/SettingsPage'; // Import your settings page
+import MobileMenu from './components/layout/MobileMenu';
 // Import other pages as you create them
+
 
 // Basic Layout component if you want Navbar/Footer on multiple pages
 const MainLayout = () => {
   return (
-  <div className=" min-h-screen flex flex-row bg-background text-foreground"> 
-    {/* Sidebar locked left */}
-    <Sidebar />
-    {/* Main content Area */}
-    <div className="flex flex-col flex-grow"> {/* Adjust margin-left based on sidebar width */}
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
-        <Outlet /> {/* Child routes will render here */}
-      </main>
-      <Footer />
-    </div>
-  </div>
-);
+    <>
+      <MobileMenu />
+      <div className=" min-h-screen flex flex-row bg-background text-foreground">
+        {/* Sidebar locked left */}
+        <Sidebar />
+        {/* Main content Area */}
+        <div className="flex flex-col flex-grow"> {/* Adjust margin-left based on sidebar width */}
+          <Navbar />
+          <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
+            <Outlet /> {/* Child routes will render here */}
+          </main>
+          <Footer />
+        </div>
+      </div>
+    </>
+  );
 };
 
 function App() {
