@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 
 export default function Sidebar() {
   return (
+    <aside className="w-64 bg-slate-800 text-white h-screen p-4">
+    {/* Close button (mobile only) */}
+    <button onClick={() => console.log('Close menu')} className="md:hidden text-white mb-4">
+      ✕
+    </button>
     <div className="w-64 bg-slate-800 text-white h-screen p-4">
       <h2 className="text-xl font-bold mb-6">AetherPro</h2>
       <ul className="space-y-4">
@@ -19,5 +24,6 @@ export default function Sidebar() {
         <li><Link to="/dashboard" className="hover:text-blue-400">Dashboard</Link></li>
       </ul>
     </div>
+    </aside>
   );
 }

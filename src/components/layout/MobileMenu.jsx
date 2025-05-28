@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import Sidebar from './Sidebar';
 
 const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
