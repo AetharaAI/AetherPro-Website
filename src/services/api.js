@@ -1,12 +1,16 @@
-// src/services/api.js
+// src/services/api.js (Updated submitPrompt)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://66.179.241.125:8000'; // Your FastAPI server URL
 
-async function fetchApi(endpoint, options = {}) {
+async function fetchApi(endpoint, options = {}, token = null) { // Added token parameter
   const url = `${API_BASE_URL}${endpoint}`;
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    // Add Authorization header here if/when you implement auth
   };
+
+  // Add Authorization header here if/when you implement auth
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
 
   const config = {
     ...options,
@@ -23,19 +27,19 @@ async function fetchApi(endpoint, options = {}) {
       console.error(`API Error ${response.status} for ${url}:`, errorData);
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
     }
-    // Handle cases where response might be empty (e.g., 204 No Content)
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       return response.json();
     }
-    return response.text(); // Or handle as blob, etc., if needed
+    return response.text();
   } catch (error) {
     console.error(`Network or other error for ${url}:`, error);
-    throw error; // Re-throw to be caught by calling component
+    throw error;
   }
 }
 
-export const submitPrompt = async (promptText, sessionId = null, selectedAgents = null) => {
+// export const submitPrompt = async (promptText, sessionId = null, selectedAgents = null) => { // OLD
+export const submitPrompt = async (promptText, sessionId = null, selectedAgents = null, token = null) => { // NEW: Add token
   const payload = {
     prompt_text: promptText,
   };
@@ -48,17 +52,21 @@ export const submitPrompt = async (promptText, sessionId = null, selectedAgents 
   return fetchApi('/api/v1/prompt', { // Ensure this matches your FastAPI endpoint
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }, token); // Pass token to fetchApi
 };
 
-export const getSystemStatus = async () => {
-  return fetchApi('/api/v1/system/status'); // Ensure this matches
+export const getSystemStatus = async (token = null) => { // Add token
+  return fetchApi('/api/v1/system/status', {}, token);
 };
 
-export const getAgents = async () => {
-  return fetchApi('/api/v1/agents'); // Ensure this matches
+export const getAgents = async (token = null) => { // Add token
+  return fetchApi('/api/v1/agents', {}, token);
+};
+export const api = {
+  fetchApi,
+  submitPrompt,
+  getSystemStatus,
+  getAgents,
 };
 
-// Add more API functions here as needed:
-// export const getMemoryRecords = async (filters) => { ... }
-// export const updateAgentConfig = async (agentId, config) => { ... }
+// ...

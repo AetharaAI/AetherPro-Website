@@ -1,22 +1,22 @@
 // src/pages/ChatPage.jsx
 import React from 'react';
-import ChatWindow from '../components/chat/ChatWindow';
 import ChatInput from '../components/chat/ChatInput';
-import useChatStore from '../store/chatStore';
-import { Button } from '@/components/ui/button'; // shadcn/ui
+import ChatWindow from '../components/chat/ChatWindow';
+import AgentSelectorToggle from '../components/chat/AgentSelectorToggle'; // Assuming this is used
 
 const ChatPage = () => {
-  const startNewSession = useChatStore((state) => state.startNewSession);
-
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)]"> {/* Adjust height based on Navbar/Footer */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">AetherPro Chat</h1>
-        <Button onClick={startNewSession} variant="outline">New Session</Button>
+    <div className="flex flex-col h-full bg-background"> {/* Chat page fills its container */}
+      <div className="flex-grow overflow-y-auto p-4">
+        {/* Main chat display area */}
+        <ChatWindow />
       </div>
-      <ChatWindow />
-      <ChatInput />
-      {/* Later, add AgentSelectorToggle here or within ChatInput area */}
+      <div className="p-4 border-t border-border bg-card">
+        {/* Chat input area */}
+        <ChatInput />
+        {/* AgentSelectorToggle could also be here if you want it below input */}
+        {/* <AgentSelectorToggle /> */}
+      </div>
     </div>
   );
 };

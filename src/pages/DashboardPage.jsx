@@ -1,34 +1,25 @@
+// src/pages/DashboardPage.jsx (Conceptual)
 import React from 'react';
-import { Link } from 'react-router-dom';
-import useAuthStore from '@/store/authStore';
 
 const DashboardPage = () => {
-  const { user, tier } = useAuthStore();
-
-  const buttons = [
-    { label: 'Chat', path: '/chat' },
-    { label: 'Memory Explorer', path: '/memory' },
-    { label: 'Settings', path: '/settings' },
-    { label: 'Admin Panel', path: '/admin' },
-    // Add more as you build them
-  ];
-
   return (
-    <div className="min-h-screen bg-background text-foreground p-8">
-      <h1 className="text-3xl font-bold mb-6">Welcome, {user?.name || 'User'}!</h1>
-      <p className="text-muted-foreground mb-4">Tier: {tier}</p>
-
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-        {buttons.map((btn) => (
-          <Link
-            key={btn.path}
-            to={btn.path}
-            className="bg-card border border-border rounded-xl p-6 shadow hover:shadow-md transition duration-200"
-          >
-            <h2 className="text-xl font-semibold mb-2">{btn.label}</h2>
-            <p className="text-muted-foreground">Go to {btn.label}</p>
-          </Link>
-        ))}
+    <div className="p-4 h-full bg-background"> {/* Dashboard page fills its container */}
+      <h1 className="text-3xl font-bold mb-6 text-primary">Dashboard Overview</h1>
+      <p className="text-muted-foreground">Welcome to your AetherPro Dashboard. Here you can see system metrics, agent activity, and more.</p>
+      {/* Add your dashboard widgets and content here */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <div className="bg-card p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-card-foreground">Agent Status</h3>
+          <p className="text-muted-foreground">Monitor your active agents.</p>
+        </div>
+        <div className="bg-card p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-card-foreground">Recent Activity</h3>
+          <p className="text-muted-foreground">View latest interactions.</p>
+        </div>
+        <div className="bg-card p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-card-foreground">Memory Usage</h3>
+          <p className="text-muted-foreground">Track memory consumption.</p>
+        </div>
       </div>
     </div>
   );

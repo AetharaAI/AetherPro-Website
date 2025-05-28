@@ -1,69 +1,41 @@
 // src/pages/LandingPage.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button"; // Assuming shadcn/ui button
+import Navbar from '../components/layout/Navbar'; // Import Navbar for the public layout
+import Footer from '../components/layout/Footer'; // Import Footer for the public layout
+
+// This page is wrapped by PublicLayout in App.jsx, which provides Navbar/Footer already.
+// So, this component just needs to render its main content.
 
 const LandingPage = () => {
   return (
-    <div className="text-center">
-      <header className="py-12 md:py-20">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-          AetherProTech
-        </h1>
-        <p className="mt-4 text-lg md:text-xl text-muted-foreground">
-          Intelligent Parallel AI Architecture for Complex Problem Solving
-        </p>
-        <div className="mt-8">
-          <Button asChild size="lg">
-            <Link to="/chat">Start Chatting</Link>
-          </Button>
-        </div>
-      </header>
-
-      <section id="overview" className="py-12 md:py-16">
-        <h2 className="text-3xl font-semibold">Overview</h2>
-        <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
-          AetherPro is an advanced asynchronous, event-driven AI kernel orchestrating multiple specialized LLM agents. 
-          It leverages persistent memory and AI-powered synthesis to deliver comprehensive and nuanced responses.
-        </p>
-        {/* Add more content */}
-      </section>
-
-      <section id="features" className="py-12 md:py-16 bg-secondary/30"> {/* Example subtle background */}
-        <h2 className="text-3xl font-semibold">Features</h2>
-        <div className="mt-8 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Feature Cards - Example */}
-          <div className="p-6 border rounded-lg">
-            <h3 className="text-xl font-medium">Multi-Agent Orchestration</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Coordinates 7+ LLMs for parallel processing.</p>
-          </div>
-          <div className="p-6 border rounded-lg">
-            <h3 className="text-xl font-medium">Persistent Contextual Memory</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Utilizes ChromaDB for long and short-term memory.</p>
-          </div>
-          <div className="p-6 border rounded-lg">
-            <h3 className="text-xl font-medium">AI-Powered Synthesis</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Merges individual agent responses into a cohesive output.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="cli-screenshots" className="py-12 md:py-16">
-        <h2 className="text-3xl font-semibold">See it in Action (CLI)</h2>
-        <p className="mt-4 text-muted-foreground">Powerful backend, now with an intuitive web interface.</p>
-        {/* Add screenshots of your CLI if you have them */}
-        <div className="mt-6 p-4 bg-slate-800 text-slate-200 rounded-md max-w-2xl mx-auto text-left text-sm font-mono">
-          <pre><code>
-            PresenceOS&gt; ask "Tell me about AetherPro..."
-            <br />
-            🤖 PresenceOS: Request sent... Waiting for merged response...
-            <br />
-            ✅ Merged Response: ...
-          </code></pre>
-        </div>
-      </section>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-8">
+      {/* The Navbar and Footer are provided by PublicLayout, so they don't need to be here */}
       
-      {/* Add API Info and Contact sections later */}
+      <h1 className="text-5xl md:text-7xl font-bold text-primary mb-4 text-center animate-fade-in-down">
+        AetherProTech
+      </h1>
+      <p className="text-xl md:text-2xl text-muted-foreground mb-8 text-center animate-fade-in-up delay-200">
+        Empowering Intelligent Collaboration with Next-Gen AI
+      </p>
+      <div className="space-y-4 sm:space-y-0 sm:space-x-4 flex flex-col sm:flex-row animate-fade-in-up delay-400">
+        <Link 
+          to="/chat" 
+          className="px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-lg hover:bg-primary/90 transition-colors transform hover:scale-105"
+        >
+          Launch AI Studio
+        </Link>
+        <Link 
+          to="/about" 
+          className="px-8 py-3 border border-secondary text-secondary-foreground font-semibold rounded-lg shadow-lg hover:bg-secondary hover:text-secondary-foreground transition-colors transform hover:scale-105"
+        >
+          Learn More
+        </Link>
+      </div>
+
+      <div className="mt-12 text-sm text-muted-foreground text-center animate-fade-in-up delay-600">
+        Already a member? <Link to="/login" className="text-primary hover:underline">Login here</Link>
+      </div>
     </div>
   );
 };

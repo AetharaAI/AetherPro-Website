@@ -1,77 +1,101 @@
+// src/App.jsx
 import React from 'react';
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom'; // Added Navigate
+import Navbar from './components/layout/Navbar'; 
+import Footer from './components/layout/Footer'; 
+import Sidebar from './components/layout/Sidebar'; 
+import LoginForm from './components/common/LoginForm';
+import SignupForm from './components/common/SignupForm'; // Assuming SignupForm is in pages directly, not common
+import NotFoundPage from './pages/NotFoundPage';
+
+// Import all your pages
 import LandingPage from './pages/LandingPage';
 import ChatPage from './pages/ChatPage';
-import Navbar from './components/layout/Navbar'; // Assuming you create this
-import Footer from './components/layout/Footer'; // Assuming you create this
-import NotFoundPage from './pages/NotFoundPage';
-import Sidebar from './components/layout/Sidebar'; // Assuming you create this
-import LoginForm from './components/common/LoginForm';
-import SignupForm from './components/common/SignupForm'; // Assuming you create this
 import DashboardPage from './pages/DashboardPage';
-import LogoutButton from './components/common/LogoutButton'; // Assuming you create this
+import MemoryExplorerPage from './pages/MemoryExplorerPage';
+import PresenceOSPage from './pages/PresenceOSPage'; // Corrected path
+import SettingsPage from './pages/SettingsPage';
+import AboutPage from './pages/AboutPage'; 
 
-//import AdminDashboardPage from './pages/AdminDashboardPage'; // Import your admin dashboard page
+// State management
+import { useAuthStore } from './store/authStore';
 
-import MemoryExplorerPage from './pages/MemoryExplorerPage'; // Import your memory explorer page
-import SettingsPage from './pages/SettingsPage'; // Import your settings page
-// Import other pages as you create them
-
-// Basic Layout component if you want Navbar/Footer on multiple pages
-const MainLayout = () => {
+// 1. Public Layout Component
+const PublicLayout = () => {
   return (
-  <div className=" min-h-screen flex flex-row bg-background text-foreground"> 
-    {/* Sidebar locked left */}
-    <Sidebar />
-    {/* Main content Area */}
-    <div className="flex flex-col flex-grow"> {/* Adjust margin-left based on sidebar width */}
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8"> {/* Adjust padding as needed */}
-        <Outlet /> {/* Child routes will render here */}
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <Outlet /> {/* This renders the child routes defined in App.jsx */}
       </main>
       <Footer />
     </div>
-  </div>
-);
+  );
 };
 
+// 2. Authenticated/Studio Layout Component
+const StudioLayout = () => {
+  const { isAuthenticated } = useAuthStore();
+
+  if (!isAuthenticated) {
+    // If not authenticated, redirect to login page
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <div className="flex h-screen bg-background text-foreground">
+      {/* Left Sidebar for Studio Navigation */}
+      <aside className="w-64 flex-shrink-0 bg-sidebar text-sidebar-foreground shadow-lg overflow-y-auto">
+        <Sidebar /> 
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-grow flex flex-col overflow-hidden bg-background">
+        <div className="flex-grow overflow-y-auto">
+          <Outlet /> {/* This renders the child routes defined in App.jsx */}
+        </div>
+      </main>
+
+      {/* Right Sidebar (for model parameters, agent details, etc.) */}
+      <aside className="w-80 flex-shrink-0 bg-card text-card-foreground shadow-lg border-l border-border overflow-y-auto hidden lg:block">
+        <div className="p-4 h-full">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Model Controls</h2>
+          <p className="text-sm text-muted-foreground">Adjust LLM parameters, select agents, view metrics...</p>
+        </div>
+      </aside>
+    </div>
+  );
+};
+
+// 3. Main App Component (Contains only ONE Router and all Routes)
 function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}> {/* Use a layout for pages with Navbar/Footer */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        {/* <Route path="/admin" element={<AdminDashboardPage />} /> {/* Admin dashboard page */} 
-        
-        <Route path="/memory" element={<MemoryExplorerPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/signup" element={<SignupForm />} /> {/* Sign-up page */}
-        <Route path="/logout" element={<LogoutButton />} /> {/* Logout button */}
-        
-        {/* Add other routes as you create them */}
-        {/* <Route path="/chat" element={<ChatPage />} /> */}
-        {/* <Route path="/admin" element={<AdminDashboardPage />} /> */}
-        {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
-        {/* <Route path="/settings" element={<SettingsPage />} /> */}
+    <Router> {/* Only one Router at the top */}
+      <Routes>
+        {/* Public Routes (using PublicLayout) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<SignupForm />} /> {/* Ensure SignupForm is in pages */}
+          {/* Add more public routes here */}
+        </Route>
 
-        {/* Add other routes for Admin, Memory, Settings later */}
-        {/* <Route path="/admin" element={<AdminDashboardPage />} /> */}
-        {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
-        {/* <Route path="/settings" element={<SettingsPage />} /> */}
-        <Route path="/login" element={<LoginForm />} /> {/* Login page */}
-        <Route path="/dashboard" element={<DashboardPage />} /> {/* Dashboard page */}
-        
-        {/* Add more routes as you create them */}
-        {/* <Route path="/chat" element={<ChatPage />} /> */}
-        {/* <Route path="/memory" element={<MemoryExplorerPage />} /> */}
-        {/* <Route path="/settings" element={<SettingsPage />} /> */}
-        {/* Add more routes as you create them */}
-        
-        {/* Catch-all for 404 */}
-      
-        <Route path="*" element={<NotFoundPage />} /> {/* Catch-all for 404 */}
-      </Route>
-    </Routes>
+        {/* Authenticated/Studio Routes (using StudioLayout) */}
+        <Route element={<StudioLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/memory-explorer" element={<MemoryExplorerPage />} />
+          <Route path="/presenceos" element={<PresenceOSPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          {/* Add more authenticated routes here */}
+        </Route>
+
+        {/* Catch-all for 404 - can be outside layouts or within a specific one */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Router>
   );
 }
+
 export default App;

@@ -3,9 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
- @tailwind base; 
- @tailwind components;
- @tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
  body {
   background-color: #0d0d0d;
