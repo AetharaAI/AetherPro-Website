@@ -7,10 +7,11 @@
  @tailwind components;
  @tailwind utilities;
 
- body {
+ /* body {
   background-color: #0d0d0d;
   color: #f0f0f0;
- }
+ } */
+ 
 
  @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -85,8 +86,16 @@
   --sidebar-border: oklch(0.923 0.003 48.717);
   --sidebar-ring: oklch(0.709 0.01 56.259);
 }
+body {
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white; /* Optional: make text readable */
+}
 
- .dark {
+.dark {
   --background: oklch(0.147 0.004 49.25);
   --foreground: oklch(0.985 0.001 106.423);
   --card: oklch(0.216 0.006 56.043);
