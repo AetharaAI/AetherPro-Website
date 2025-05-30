@@ -3,8 +3,16 @@ import React, { useState } from 'react';
 import useAuthStore from '@/store/authStore';
 import { useNavigate } from 'react-router-dom'; // Ensure you have react-router-dom installed
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
-const LoginForm = () => { 
+<Button
+  className="w-full bg-white text-black border flex items-center justify-center gap-2 mt-4"
+>
+  <img src="/google-icon.png" alt="Google" className="h-5 w-5" />
+  Sign in with Google
+</Button>
+
+const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
