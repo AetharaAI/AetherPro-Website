@@ -178,11 +178,15 @@
   }
   
   .aetherpro-card {
-    @apply bg-card/90 backdrop-blur-sm border border-border/50;
+    @apply bg-card/90 border border-border/50;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   .aetherpro-nav {
-    @apply bg-background/80 backdrop-blur-md border-b border-border/50;
+    @apply bg-background/80 border-b border-border/50;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   
   .aetherpro-hero {
@@ -191,32 +195,44 @@
   
   /* Console specific styles */
   .console-container {
-    @apply bg-background/95 backdrop-blur-sm;
+    @apply bg-background/95;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   /* Form elements with background transparency */
   .aetherpro-input {
-    @apply bg-input/80 backdrop-blur-sm border-border/50 focus:bg-input/90;
+    @apply bg-input/80 border-border/50 focus:bg-input/90;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   /* Modal backgrounds */
   .aetherpro-modal {
-    @apply bg-card/95 backdrop-blur-md border border-border/50;
+    @apply bg-card/95 border border-border/50;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   
   /* Special styling for code blocks */
   .aetherpro-code {
-    @apply bg-gray-900/90 backdrop-blur-sm;
+    @apply bg-gray-900/90;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   /* Dashboard cards */
   .dashboard-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/30 hover:bg-card/90 transition-all duration-200;
+    @apply bg-card/80 border border-border/30 hover:bg-card/90 transition-all duration-200;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   /* Pricing cards */
   .pricing-card {
-    @apply bg-card/85 backdrop-blur-sm border border-border/40 hover:border-primary/50 transition-all duration-300;
+    @apply bg-card/85 border border-border/40 hover:border-primary/50 transition-all duration-300;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   .pricing-card.popular {
@@ -239,7 +255,9 @@
   }
   
   .glass-morphism {
-    @apply backdrop-blur-glass bg-white/10 border border-white/20;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    @apply bg-white/10 border border-white/20;
   }
   
   .dark .glass-morphism {
@@ -305,7 +323,7 @@
     color: black !important;
   }
   
-  .no-print {
-    display: none !important;
+    .no-print {
+      display: none !important;
+    }
   }
-}

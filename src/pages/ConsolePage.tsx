@@ -1,5 +1,7 @@
+// pages/ConsolePage.tsx - Fixed to use API service
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import {
+import { useAuth } from '../contexts/AuthContext';
+import { 
   Send,
   Download,
   Copy,
@@ -17,47 +19,44 @@ import {
   MessageSquare,
   Upload
 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import { v4 as uuidv4 } from 'uuid';
 
-// --- API Configuration ---
-// IMPORTANT: Replace with your actual AetherPro API URL for production
-const AETHERPRO_API_BASE_URL = 'http://localhost:8000/api/v1'; // For local development
-const AETHERPRO_WS_BASE_URL = 'ws://localhost:8000/ws/chat';   // For local development
-// For production (e.g., Ionos VPS):
-// const AETHERPRO_API_BASE_URL = 'https://aetherprotech.com/api/v1';
-// const AETHERPRO_WS_BASE_URL = 'wss://aetherprotech.com/ws/chat';
+// Import your API service instead of hardcoded URLs
+import { 
+  getModules, 
+  submitPrompt, 
+  uploadFile, 
+  createWebSocketConnection 
+} from '../services/api';
 
 // --- Type Definitions ---
 interface Agent {
   id: string;
   name: string;
   provider?: string;
-  status?: string; // 'online', 'offline', 'error'
-  description?: string; // from module info
-  version?: string; // from module info
+  status?: string; 
+  description?: string; 
+  version?: string; 
 }
 
 interface Conversation {
   id: string;
   title: string;
   timestamp: string;
-  agent?: string; // Primary agent
-  turns?: any[]; // Full conversation turns (for loading)
+  agent?: string; 
+  turns?: any[]; 
 }
 
 interface LLMResponse {
   content: string;
   version?: string;
   tools?: string[];
-  agent_id?: string; // The agent that produced this response
+  agent_id?: string; 
   request_id?: string;
   error?: string;
-  // For merged content:
   reasoning?: string;
   source_agents?: string[];
 }
-// --- End Type Definitions ---
-
 
 // --- Header Component ---
 const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, availableAgents }: {
@@ -70,12 +69,12 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <header className="aetherpro-nav px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"></div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">AetherPro</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">AetherPro Console</h1>
           </div>
 
           {/* Agent Selector */}
@@ -90,7 +89,7 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
             </button>
 
             {agentDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+              <div className="absolute top-full left-0 mt-2 w-64 aetherpro-modal rounded-lg shadow-lg z-50">
                 {availableAgents.map((agent: Agent) => (
                   <button
                     key={agent.id}
@@ -140,7 +139,7 @@ const Sidebar = ({ conversations, onNewChat, onSelectConversation }: {
   onSelectConversation: (conversation: Conversation) => void;
 }) => {
   return (
-    <aside className="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <aside className="w-80 aetherpro-card border-r flex flex-col">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={onNewChat}
@@ -225,7 +224,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
     if (file.type.includes('text') || file.name.endsWith('.md')) return <FileText className="w-4 h-4" />;
     if (file.name.endsWith('.json') || file.name.endsWith('.jsonl')) return <Code className="w-4 h-4" />;
     if (file.name.endsWith('.zip')) return <Archive className="w-4 h-4" />;
-    return <FileText className="w-4 h-4" />; // Default fallback
+    return <FileText className="w-4 h-4" />;
   };
 
   return (
@@ -249,7 +248,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
           >browse</button>
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Supports: .txt, .csv, .md, .json, .jsonl, .odt, .zip, .pdf, .docx, .xlsx (file types processed by backend agents vary)
+          Supports: .txt, .csv, .md, .json, .jsonl, .odt, .zip, .pdf, .docx, .xlsx
         </p>
         <input
           ref={fileInputRef}
@@ -257,7 +256,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
           multiple
           onChange={handleFileSelect}
           className="hidden"
-          accept=".txt,.csv,.md,.json,.jsonl,.odt,.zip,.pdf,.docx,.xlsx" // Expanded common document types
+          accept=".txt,.csv,.md,.json,.jsonl,.odt,.zip,.pdf,.docx,.xlsx"
         />
       </div>
 
@@ -289,7 +288,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
   );
 };
 
-// --- Code Block Component ---
+// --- Code Block Component (unchanged) ---
 const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
   code: string;
   language: string;
@@ -299,7 +298,7 @@ const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
   onPublish: () => void;
 }) => {
   return (
-    <div className="bg-gray-900 rounded-lg overflow-hidden">
+    <div className="aetherpro-code rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-300">{language}</span>
@@ -310,25 +309,13 @@ const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
           )}
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={onCopy}
-            className="p-1.5 text-gray-400 hover:text-white transition-colors"
-            title="Copy code"
-          >
+          <button onClick={onCopy} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Copy code">
             <Copy className="w-4 h-4" />
           </button>
-          <button
-            onClick={onDownload}
-            className="p-1.5 text-gray-400 hover:text-white transition-colors"
-            title="Download as file"
-          >
+          <button onClick={onDownload} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Download as file">
             <Download className="w-4 h-4" />
           </button>
-          <button
-            onClick={onPublish}
-            className="p-1.5 text-gray-400 hover:text-white transition-colors"
-            title="Publish tool"
-          >
+          <button onClick={onPublish} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Publish tool">
             <Share className="w-4 h-4" />
           </button>
         </div>
@@ -340,7 +327,7 @@ const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
   );
 };
 
-// --- Response Tab Component ---
+// --- Response Tab Component (unchanged) ---
 const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mergedContent }: {
   responses: Record<string, LLMResponse>;
   activeTab: string;
@@ -349,16 +336,15 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
   mergedContent: LLMResponse | null;
 }) => {
   const renderResponseContent = (content: string, responseMeta: LLMResponse) => {
-    // Basic markdown code block parsing logic
     return content.split('```').map((part, index) => {
-      if (index % 2 === 1) { // This is a code block
+      if (index % 2 === 1) {
         const [lang, ...codeLines] = part.split('\n');
         const code = codeLines.join('\n');
         return (
           <CodeBlock
             key={index}
             code={code}
-            language={lang || 'plaintext'} // Default to plaintext if no language specified
+            language={lang || 'plaintext'}
             version={responseMeta.version}
             onCopy={() => navigator?.clipboard?.writeText(code)}
             onDownload={() => {
@@ -368,7 +354,7 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
               a.href = url;
               a.download = `code.${lang || 'txt'}`;
               a.click();
-              URL.revokeObjectURL(url); // Clean up
+              URL.revokeObjectURL(url);
             }}
             onPublish={() => console.log('Publishing tool...')}
           />
@@ -418,7 +404,7 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
                 <p className="text-gray-500 dark:text-gray-400 italic">No responses yet. Start a conversation!</p>
             )}
             {Object.entries(responses).map(([agentId, response]: [string, LLMResponse]) => (
-              <div key={agentId} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div key={agentId} className="dashboard-card rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
                   {availableAgents.find((a: Agent) => a.id === agentId)?.name || agentId} Response
                 </h3>
@@ -464,7 +450,7 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
   );
 };
 
-// --- Main Chat Interface Component ---
+// --- Main Chat Interface Component (Updated to use API service) ---
 const ChatInterface = ({
   selectedAgent,
   availableAgents,
@@ -490,13 +476,11 @@ const ChatInterface = ({
   prompt: string;
   setPrompt: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [files, setFiles] = useState<File[]>([]); // Explicitly type as File[]
+  const [files, setFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const websocket = useRef<WebSocket | null>(null);
-
-  // Refs for the latest state values that change frequently
   const currentRequestIdRef = useRef<string | null>(null);
   const responsesRef = useRef<Record<string, LLMResponse>>({});
   const mergedResponseRef = useRef<LLMResponse | null>(null);
@@ -504,7 +488,7 @@ const ChatInterface = ({
   const setResponsesRef = useRef<React.Dispatch<React.SetStateAction<Record<string, LLMResponse>>>>(() => {});
   const setMergedResponseRef = useRef<React.Dispatch<React.SetStateAction<LLMResponse | null>>>(() => {});
 
-  // Keep refs updated whenever state changes
+  // Keep refs updated
   useEffect(() => { currentRequestIdRef.current = currentRequestId; }, [currentRequestId]);
   useEffect(() => { responsesRef.current = responses; }, [responses]);
   useEffect(() => { mergedResponseRef.current = mergedResponse; }, [mergedResponse]);
@@ -512,14 +496,11 @@ const ChatInterface = ({
   useEffect(() => { setResponsesRef.current = setResponses; }, [setResponses]);
   useEffect(() => { setMergedResponseRef.current = setMergedResponse; }, [setMergedResponse]);
 
-
-  // WebSocket connection setup
+  // WebSocket connection setup using API service
   useEffect(() => {
-    // If WS already exists, close it (this handles re-running the effect for session changes)
     if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
-      console.log('Closing existing WebSocket due to currentSessionId change or initial setup.');
       websocket.current.close();
-      websocket.current = null; // Clear ref after closing
+      websocket.current = null;
     }
 
     if (!currentSessionId) {
@@ -527,98 +508,133 @@ const ChatInterface = ({
       return;
     }
 
-    const ws = new WebSocket(`${AETHERPRO_WS_BASE_URL}?session_id=${currentSessionId}`);
-    websocket.current = ws;
+    // Use API service WebSocket helper
+    interface WebSocketMessageBase {
+      type: string;
+      request_id?: string;
+      agent_id?: string;
+      error?: string;
+      details?: any;
+    }
 
-    ws.onopen = () => console.log('WebSocket connected.');
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log('WS Message received:', message);
-      console.log('Current Request ID (frontend state - from ref):', currentRequestIdRef.current);
-      console.log('Message Request ID (from backend):', message.request_id);
+    interface IndividualResponseMessage extends WebSocketMessageBase {
+      type: 'individual_response';
+      request_id: string;
+      agent_id: string;
+      content: string;
+      version?: string;
+      tools?: string[];
+      error?: string;
+    }
 
-      if (message.type === 'individual_response' && message.request_id === currentRequestIdRef.current) {
-        setResponsesRef.current(prev => {
-          const newResponses = { ...prev };
-          newResponses[message.agent_id] = {
-            content: message.content,
-            version: message.version,
-            tools: message.tools,
-            error: message.error
-          };
-          console.log('Updating individual responses:', newResponses);
-          return newResponses;
-        });console.log('Updating individual response for agent:', message.agent_id);
-      setIsLoadingRef.current(true); // Keep loading state true until merged response is received
-      console.log('Processed Merged Response for matching Request ID!');
-      } else if (message.type === 'merged_response' && message.request_id === currentRequestIdRef.current) {
-        setMergedResponseRef.current({
-            content: message.content,
-            agent_id: 'merged', // A dummy agent ID for the merged view
-            reasoning: message.reasoning,
+    interface MergedResponseMessage extends WebSocketMessageBase {
+      type: 'merged_response';
+      request_id: string;
+      content: string;
+      reasoning?: string;
+      error?: string;
+    }
+
+    interface SystemErrorMessage extends WebSocketMessageBase {
+      type: 'system_error';
+      error: string;
+      details?: any;
+    }
+
+    interface RequestErrorMessage extends WebSocketMessageBase {
+      type: 'error';
+      request_id: string;
+      error: string;
+    }
+
+    type WebSocketMessage =
+      | IndividualResponseMessage
+      | MergedResponseMessage
+      | SystemErrorMessage
+      | RequestErrorMessage
+      | WebSocketMessageBase;
+
+    websocket.current = createWebSocketConnection(
+      currentSessionId,
+      (message: WebSocketMessage) => {
+        console.log('WS Message received:', message);
+        console.log('Current Request ID (frontend state - from ref):', currentRequestIdRef.current);
+        console.log('Message Request ID (from backend):', message.request_id);
+
+        if (message.type === 'individual_response' && message.request_id === currentRequestIdRef.current) {
+          setResponsesRef.current((prev: Record<string, LLMResponse>) => {
+            const newResponses = { ...prev };
+            newResponses[message.agent_id as string] = {
+              content: (message as IndividualResponseMessage).content,
+              version: (message as IndividualResponseMessage).version,
+              tools: (message as IndividualResponseMessage).tools,
+              error: message.error
+            };
+            console.log('Updating individual responses:', newResponses);
+            return newResponses;
+          });
+          setIsLoadingRef.current(true);
+        } else if (message.type === 'merged_response' && message.request_id === currentRequestIdRef.current) {
+          setMergedResponseRef.current({
+              content: (message as MergedResponseMessage).content,
+              agent_id: 'merged',
+              reasoning: (message as MergedResponseMessage).reasoning,
+              error: message.error,
+          });
+          setIsLoadingRef.current(false);
+          console.log('Updating merged response and setting isLoading to false.');
+        } else if (message.type === 'system_error') {
+          console.error('System Error from Backend:', message.error, message.details);
+          setIsLoadingRef.current(false);
+          setMergedResponseRef.current({
+            content: `A system error occurred: ${message.error || 'Unknown error'}`,
+            agent_id: 'system_error',
             error: message.error,
-        });
-        setIsLoadingRef.current(false);
-        console.log('Updating merged response and setting isLoading to false.');
-      } else if (message.type === 'system_error') {
-        console.error('System Error from Backend:', message.error, message.details);
-        setIsLoadingRef.current(false);
-        setMergedResponseRef.current({
-          content: `A system error occurred: ${message.error || 'Unknown error'}`,
-          agent_id: 'system_error',
-          error: message.error,
-          reasoning: JSON.stringify(message.details || {})
-        });
-      } else if (message.type === 'error' && message.request_id === currentRequestIdRef.current) {
-        console.error('Request-specific Error from Backend:', message.error);
-        setIsLoadingRef.current(false);
-        setMergedResponseRef.current({
-            content: `An error occurred during processing: ${message.error}`,
-            agent_id: 'request_error',
-            error: message.error
-        });
-      } else {
-          console.warn("WS Message received but not processed (ID mismatch or unexpected type):", message), "Frontend ReqID:", currentRequestIdRef.current;
-      }
-    };
-    ws.onclose = () => console.log('WebSocket disconnected');
-    ws.onerror = (error) => console.error('WebSocket error:', error);
+            reasoning: JSON.stringify(message.details || {})
+          });
+        } else if (message.type === 'error' && message.request_id === currentRequestIdRef.current) {
+          console.error('Request-specific Error from Backend:', message.error);
+          setIsLoadingRef.current(false);
+          setMergedResponseRef.current({
+              content: `An error occurred during processing: ${message.error}`,
+              agent_id: 'request_error',
+              error: message.error
+          });
+        } else {
+            console.warn("WS Message received but not processed (ID mismatch or unexpected type):", message, "Frontend ReqID:", currentRequestIdRef.current);
+        }
+      },
+      (error: Event) => console.error('WebSocket error:', error),
+      (event: CloseEvent) => console.log('WebSocket closed:', event.code, event.reason)
+    );
 
     return () => {
-      // Cleanup: Close WebSocket when component unmounts or effect re-runs
       if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
         websocket.current.close();
       }
     };
-  }, [currentSessionId]); // Only reconnect if currentSessionId changes
+  }, [currentSessionId]);
 
-  const [activeTab, setActiveTab] = useState('merged'); // Local state for active tab
-
+  const [activeTab, setActiveTab] = useState('merged');
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!prompt.trim() && files.length === 0) return;
 
     setIsLoading(true);
-    setResponses({}); // Clear previous individual responses
-    setMergedResponse(null); // Clear previous merged response
+    setResponses({});
+    setMergedResponse(null);
     const newRequestId = uuidv4();
-    setCurrentRequestId(newRequestId); // Set current request ID for WebSocket filtering
-    currentRequestIdRef.current = newRequestId; // Update ref for WebSocket handling
-    setActiveTab('merged'); // Reset tab to merged view or first agent
+    setCurrentRequestId(newRequestId);
+    currentRequestIdRef.current = newRequestId;
+    setActiveTab('merged');
 
-    // 1. Upload files first
-    const uploadedFilePaths: { filename: string; temp_path: string; size: number; content_type: string }[] = [];
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const response = await fetch(`${AETHERPRO_API_BASE_URL}/upload-file`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.ok) {
-          const data = await response.json();
+    try {
+      // 1. Upload files using API service
+      const uploadedFilePaths: { filename: string; temp_path: string; size: number; content_type: string }[] = [];
+      for (const file of files) {
+        try {
+          const data = await uploadFile(file);
           uploadedFilePaths.push({
             filename: data.filename,
             temp_path: data.temp_path,
@@ -626,74 +642,49 @@ const ChatInterface = ({
             content_type: data.content_type
           });
           console.log(`Uploaded ${file.name} to ${data.temp_path}`);
-        } else {
-          const errorText = await response.text();
-          console.error(`Failed to upload file ${file.name}: ${response.status} ${errorText}`);
-          setMergedResponse({ content: `Failed to upload file: ${errorText}`, error: errorText });
+        } catch (error: any) {
+          console.error(`Error during file upload for ${file.name}:`, error);
+          setMergedResponse({ content: `Error during file upload: ${error.message}`, error: error.message });
           setIsLoading(false);
-          return; // Stop processing if file upload fails
+          return;
         }
-      } catch (error: any) {
-        console.error(`Error during file upload for ${file.name}:`, error);
-        setMergedResponse({ content: `Error during file upload: ${error.message}`, error: error.message });
-        setIsLoading(false);
-        return; // Stop processing
       }
-    }
 
-    // 2. Send prompt via HTTP POST
-    try {
+      // 2. Send prompt using API service
       console.log('Submitting prompt:', prompt);
       console.log('Current Session ID:', currentSessionId);
       console.log('Current Request ID:', newRequestId);
       console.log('Selected Agent:', selectedAgent);
-    console.log('Uploaded File Paths:', uploadedFilePaths);
+      console.log('Uploaded File Paths:', uploadedFilePaths);
 
-    const payload = {
-      prompt_text: prompt,
-      session_id: currentSessionId,
-      request_id: newRequestId, // Pass the request ID
-      selected_agents_override: selectedAgent.id !== 'merged' ? [selectedAgent.id] : null,
-      attached_files: uploadedFilePaths, // Send the paths of uploaded files
-    };
+      const selectedAgents = selectedAgent.id !== 'merged' ? [selectedAgent.id] : null;
 
-      const response = await fetch(`${AETHERPRO_API_BASE_URL}/prompt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      await submitPrompt(
+        prompt,
+        currentSessionId,
+        selectedAgents,
+        newRequestId,
+        uploadedFilePaths
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error submitting prompt:', errorData.detail || response.statusText);
-        setMergedResponse({
-            content: `Failed to submit prompt: ${errorData.detail || response.statusText}`,
-            agent_id: 'error',
-            error: errorData.detail || response.statusText
-        });
-        setIsLoading(false);
-      } else {
-        console.log('Prompt submitted successfully. Waiting for WebSocket responses.');
-        setPrompt(''); // Clear input
-        setFiles([]); // Clear files
-        // Responses will come via WebSocket, isLoading remains true until merged_response
-      }
+      console.log('Prompt submitted successfully. Waiting for WebSocket responses.');
+      setPrompt('');
+      setFiles([]);
+      // Responses will come via WebSocket, isLoading remains true until merged_response
+
     } catch (error: any) {
       console.error('Network or unexpected error submitting prompt:', error);
       setMergedResponse({
-            content: `Network or unexpected error: ${error.message}`,
-            agent_id: 'error',
-            error: error.message
-        });
+          content: `Network or unexpected error: ${error.message}`,
+          agent_id: 'error',
+          error: error.message
+      });
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Response Area */}
+    <div className="flex-1 flex flex-col console-container">
       <ResponseTabs
         responses={responses}
         activeTab={activeTab}
@@ -702,10 +693,8 @@ const ChatInterface = ({
         mergedContent={mergedResponse}
       />
 
-      {/* Input Area */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-900">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-6 aetherpro-card">
         <div className="max-w-4xl mx-auto">
-          {/* File Upload Zone */}
           <div className="mb-4">
             <FileUploadZone
               files={files}
@@ -715,14 +704,13 @@ const ChatInterface = ({
             />
           </div>
 
-          {/* Prompt Input */}
           <div className="space-y-4">
             <div className="relative">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={`Send a message to ${selectedAgent.name}...`}
-                className="w-full p-4 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                className="aetherpro-input w-full p-4 pr-12 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 rows={4}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -754,81 +742,104 @@ const ChatInterface = ({
   );
 };
 
-// --- Main App Component (AetherProInterface is now the top-level) ---
-const AetherProInterface = () => {
+// --- Main Console Component ---
+const ConsolePage = () => {
+  const { user } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent>({ id: 'merged', name: 'Merged View', status: 'online' });
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  // States passed down to ChatInterface directly
+  // States for chat interface
   const [currentSessionId, setCurrentSessionId] = useState(() => uuidv4());
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [responses, setResponses] = useState<Record<string, LLMResponse>>({});
   const [mergedResponse, setMergedResponse] = useState<LLMResponse | null>(null);
-  const [prompt, setPrompt] = useState(''); // User's input prompt text
+  const [prompt, setPrompt] = useState('');
 
-  // Fetch available agents/modules on component mount
+  // Fetch available agents/modules using API service
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const response = await fetch(`${AETHERPRO_API_BASE_URL}/modules`);
-        if (response.ok) {
-          const modules = await response.json();
-          // Filter for modules that act as LLM agents and are running
-          const agents: Agent[] = modules
-            .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner')))
-            .map((m: any) => ({
-              id: m.id,
-              name: m.name,
-              // Simple heuristic for provider based on ID, adjust as needed
-              provider: m.id.includes('openai') ? 'OpenAI' :
-                        m.id.includes('claude') ? 'Anthropic' :
-                        m.id.includes('gemini') ? 'Google' :
-                        m.id.includes('cohere') ? 'Cohere' : // Added Cohere
-                        m.id.includes('llama') ? 'Local/HuggingFace' : 'AetherPro', // Added Llama/Local
-              status: m.state === 'RUNNING' ? 'online' : 'offline',
-              description: m.description,
-              version: m.version
-            }));
+        const modules = await getModules();
+        
+        // Filter for modules that act as LLM agents and are running
+        const agents: Agent[] = modules
+          .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner')))
+          .map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            provider: m.id.includes('openai') ? 'OpenAI' :
+                      m.id.includes('claude') ? 'Anthropic' :
+                      m.id.includes('gemini') ? 'Google' :
+                      m.id.includes('cohere') ? 'Cohere' :
+                      m.id.includes('llama') ? 'Local/HuggingFace' : 'AetherPro',
+            status: m.state === 'RUNNING' ? 'online' : 'offline',
+            description: m.description,
+            version: m.version
+          }));
 
-          // Add a "Merged View" option that routes to all agents by default
-          const mergedOption: Agent = { id: 'merged', name: 'Merged View', status: 'online', description: 'Orchestrates responses across all active agents.' };
-          setAvailableAgents([mergedOption, ...agents]);
-          setSelectedAgent(mergedOption); // Set default selected agent to merged view
-        } else {
-          console.error('Failed to fetch modules:', response.statusText);
-        }
+        // Add merged view option
+        const mergedOption: Agent = { 
+          id: 'merged', 
+          name: 'Merged View', 
+          status: 'online', 
+          description: 'Orchestrates responses across all active agents.' 
+        };
+        
+        setAvailableAgents([mergedOption, ...agents]);
+        setSelectedAgent(mergedOption);
       } catch (error) {
         console.error('Error fetching modules:', error);
+        // Set fallback agents if API call fails
+        const fallbackAgents: Agent[] = [
+          { id: 'merged', name: 'Merged View', status: 'online', description: 'Orchestrates responses across all active agents.' },
+          { id: 'dummy_agent', name: 'Demo Agent', status: 'online', provider: 'AetherPro' }
+        ];
+        setAvailableAgents(fallbackAgents);
+        setSelectedAgent(fallbackAgents[0]);
       }
     };
+    
     fetchAgents();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+    // Update the document class for global dark mode
+    if (darkMode) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
   };
 
   const handleNewChat = () => {
     console.log('Starting new chat...');
-    // Reset all chat-related states for a new conversation
     setCurrentSessionId(uuidv4());
-    setCurrentRequestId(null); // No active request
-    setResponses({}); // Clear individual agent responses
-    setMergedResponse(null); // Clear merged response
-    setPrompt(''); // Clear input text
+    setCurrentRequestId(null);
+    setResponses({});
+    setMergedResponse(null);
+    setPrompt('');
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
     console.log('Selected conversation:', conversation);
-    // Future: Logic to load historical chat data into the ChatInterface
-    setCurrentSessionId(conversation.id); // Assuming conversation.id is the session_id
-    setCurrentRequestId(null); // No active request for historical view
-    setResponses({}); // Clear current responses
-    setMergedResponse(null); // Clear current merged response
-    setPrompt(''); // Clear input text
+    setCurrentSessionId(conversation.id);
+    setCurrentRequestId(null);
+    setResponses({});
+    setMergedResponse(null);
+    setPrompt('');
   };
+
+  // Set initial dark mode class
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
 
   return (
     <div className={`${darkMode ? 'dark' : ''}`}>
@@ -848,7 +859,7 @@ const AetherProInterface = () => {
             onSelectConversation={handleSelectConversation}
           />
 
-          <div className="flex-1 flex flex-col overflow-y-auto"> {/* This div ensures chat content is scrollable */}
+          <div className="flex-1 flex flex-col overflow-hidden">
             <ChatInterface
               selectedAgent={selectedAgent}
               availableAgents={availableAgents}
@@ -869,4 +880,4 @@ const AetherProInterface = () => {
   );
 };
 
-export default AetherProInterface;
+export default ConsolePage;
