@@ -43,11 +43,7 @@ function App() {
           />
           <Route
             path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
+            element={<DashboardPage />}
           />
           <Route
             path="/account/api-keys"
@@ -59,11 +55,7 @@ function App() {
           />
           <Route
             path="/console"
-            element={
-              <ProtectedRoute>
-                <ConsolePage />
-              </ProtectedRoute>
-            }
+            element={<ConsolePage />}
           />
         </Routes>
       </main>

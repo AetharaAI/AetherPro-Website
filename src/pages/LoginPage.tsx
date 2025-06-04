@@ -4,9 +4,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const { login, loginWithGoogle, loginWithGitHub } = useAuth();
+  const navigate = useNavigate();
+
+  // State for form data and UI states
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,6 +26,7 @@ const LoginPage = () => {
 
     try {
       await login(formData.email, formData.password);
+      navigate('/console'); // Redirect to dashboard on successful login
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -36,9 +41,11 @@ const LoginPage = () => {
     try {
       if (provider === 'google') {
         await loginWithGoogle();
+        navigate('/dashboard'); // Redirect to dashboard on successful login
       } else {
         await loginWithGitHub();
       }
+      navigate('/dashboard'); // Redirect to dashboard on successful login
     } catch (err: any) {
       setError(err.message || `${provider} login failed. Please try again.`);
     } finally {

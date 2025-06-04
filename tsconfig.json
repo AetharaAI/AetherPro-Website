@@ -1,0 +1,32 @@
+// jsconfig.json (in the root of aetherpro-website)
+{
+  "compilerOptions": {
+   "target": "esnext",
+   "module": "esnext",
+   "lib": ["DOM", "ESNext"],
+   "jsx": "react-jsx",
+   "strict": true,
+   "esModuleInterop": true,
+   "skipLibCheck": true,
+   "forceConsistentCasingInFileNames": true,
+   "moduleDetection": "force",
+   "resolveJsonModule": true,
+   "allowSyntheticDefaultImports": true,
+   "noEmit": true,
+   "isolatedModules": true,
+   "allowJs": true,
+   "checkJs": false,
+   "incremental": true,
+   "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+   "outDir": "dist",
+   "rootDir": "src",
+   "moduleResolution": "node",
+   "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@utils/*": ["../utils/src/*"]
+    }
+  },
+  "include": ["src", "../utils"],
+  "exclude": ["node_modules", "dist"]
+}
