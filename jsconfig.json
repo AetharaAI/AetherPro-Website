@@ -7,5 +7,5 @@
     },
     "jsx": "react-jsx" // Good to have for React projects
   },
-  "include": ["src"]
+  "include": ["src", "../utils"]
 }

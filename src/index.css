@@ -1,19 +1,12 @@
-
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
- @tailwind base; 
- @tailwind components;
- @tailwind utilities;
+@tailwind base; 
+@tailwind components;
+@tailwind utilities;
 
- /* body {
-  background-color: #0d0d0d;
-  color: #f0f0f0;
- } */
- 
-
- @theme inline {
+@theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -49,61 +42,64 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* AetherPro Brand Colors */
+  --aetherpro-blue: #3b82f6;
+  --aetherpro-purple: #8b5cf6;
+  --aetherpro-gradient: linear-gradient(135deg, var(--aetherpro-blue), var(--aetherpro-purple));
 }
 
- :root {
+:root {
   --radius: 0.625rem;
-  --background: oklch(0.147 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.216 0.006 56.043);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.923 0.003 48.717);
-  --primary-foreground: oklch(0.216 0.006 56.043);
-  --secondary: oklch(0.268 0.007 34.298);
-  --secondary-foreground: oklch(0.985 0.001 106.423);
-  --muted: oklch(0.268 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
-  --accent: oklch(0.268 0.007 34.298);
-  --accent-foreground: oklch(0.985 0.001 106.423);
+  
+  /* Light theme colors - updated for better contrast with background */
+  --background: rgba(255, 255, 255, 0.95);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: rgba(255, 255, 255, 0.9);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: rgba(255, 255, 255, 0.95);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.553 0.207 255.51); /* Blue */
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.923 0.003 48.717);
+  --secondary-foreground: oklch(0.147 0.004 49.25);
+  --muted: oklch(0.923 0.003 48.717);
+  --muted-foreground: oklch(0.4 0.01 240.5);
+  --accent: oklch(0.923 0.003 48.717);
+  --accent-foreground: oklch(0.147 0.004 49.25);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.4 0.01 240.5);
-
-  --input: oklch(0.923 0.003 48.717);
-  --ring: oklch(0.709 0.01 56.259);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
+  --border: oklch(0.85 0.003 48.717);
+  --input: rgba(255, 255, 255, 0.8);
+  --ring: var(--aetherpro-blue);
+  
+  /* Chart colors */
+  --chart-1: var(--aetherpro-blue);
+  --chart-2: var(--aetherpro-purple);
+  --chart-3: oklch(0.6 0.118 184.704);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0.001 106.423);
+  
+  /* Sidebar colors */
+  --sidebar: rgba(255, 255, 255, 0.95);
   --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: oklch(0.216 0.006 56.043);
+  --sidebar-primary: var(--aetherpro-blue);
   --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
   --sidebar-accent: oklch(0.97 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-border: oklch(0.923 0.003 48.717);
-  --sidebar-ring: oklch(0.709 0.01 56.259);
-}
-body {
-  background-image: url('/background.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  color: white; /* Optional: make text readable */
+  --sidebar-accent-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-border: oklch(0.85 0.003 48.717);
+  --sidebar-ring: var(--aetherpro-blue);
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25);
+  /* Dark theme colors - your existing setup enhanced */
+  --background: rgba(37, 37, 37, 0.95);
   --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043);
+  --card: rgba(55, 55, 55, 0.9);
   --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.216 0.006 56.043);
+  --popover: rgba(55, 55, 55, 0.95);
   --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.923 0.003 48.717);
-  --primary-foreground: oklch(0.216 0.006 56.043);
+  --primary: var(--aetherpro-blue);
+  --primary-foreground: oklch(0.985 0.001 106.423);
   --secondary: oklch(0.268 0.007 34.298);
   --secondary-foreground: oklch(0.985 0.001 106.423);
   --muted: oklch(0.268 0.007 34.298);
@@ -111,35 +107,205 @@ body {
   --accent: oklch(0.268 0.007 34.298);
   --accent-foreground: oklch(0.985 0.001 106.423);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.553 0.013 58.071);
-  --chart-1: oklch(0.488 0.243 264.376);
+  --border: oklch(1 0 0 / 15%);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: var(--aetherpro-blue);
+  
+  /* Chart colors for dark mode */
+  --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.216 0.006 56.043);
+  
+  /* Sidebar colors for dark mode */
+  --sidebar: rgba(55, 55, 55, 0.95);
   --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: var(--aetherpro-blue);
   --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
   --sidebar-accent: oklch(0.268 0.007 34.298);
   --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.553 0.013 58.071);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: var(--aetherpro-blue);
 }
 
- @layer base {
+@layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html, body {
+    @apply text-foreground;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    /* Your custom background - preserved */
+    background-image: url('/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    
+    /* Overlay to ensure readability */
+    position: relative;
+  }
+  
+  /* Optional: Add a subtle overlay for better text readability */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  .dark body::before {
+    background: rgba(0, 0, 0, 0.3);
   }
 }
- html, body {
-  @apply bg-background text-foreground;
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
- }
+
+@layer components {
+  /* AetherPro specific component styles */
+  .aetherpro-gradient {
+    background: var(--aetherpro-gradient);
+  }
+  
+  .aetherpro-card {
+    @apply bg-card/90 backdrop-blur-sm border border-border/50;
+  }
+  
+  .aetherpro-nav {
+    @apply bg-background/80 backdrop-blur-md border-b border-border/50;
+  }
+  
+  .aetherpro-hero {
+    background: linear-gradient(135deg, var(--aetherpro-blue), var(--aetherpro-purple));
+  }
+  
+  /* Console specific styles */
+  .console-container {
+    @apply bg-background/95 backdrop-blur-sm;
+  }
+  
+  /* Form elements with background transparency */
+  .aetherpro-input {
+    @apply bg-input/80 backdrop-blur-sm border-border/50 focus:bg-input/90;
+  }
+  
+  /* Modal backgrounds */
+  .aetherpro-modal {
+    @apply bg-card/95 backdrop-blur-md border border-border/50;
+  }
+  
+  /* Special styling for code blocks */
+  .aetherpro-code {
+    @apply bg-gray-900/90 backdrop-blur-sm;
+  }
+  
+  /* Dashboard cards */
+  .dashboard-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/30 hover:bg-card/90 transition-all duration-200;
+  }
+  
+  /* Pricing cards */
+  .pricing-card {
+    @apply bg-card/85 backdrop-blur-sm border border-border/40 hover:border-primary/50 transition-all duration-300;
+  }
+  
+  .pricing-card.popular {
+    @apply border-primary ring-2 ring-primary/20 bg-card/90;
+  }
+}
+
+@layer utilities {
+  /* Custom utilities for the SaaS app */
+  .text-gradient {
+    background: var(--aetherpro-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .backdrop-blur-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .glass-morphism {
+    @apply backdrop-blur-glass bg-white/10 border border-white/20;
+  }
+  
+  .dark .glass-morphism {
+    @apply bg-black/10 border-white/10;
+  }
+  
+  /* Smooth transitions for theme switching */
+  .theme-transition {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full hover:bg-primary/70;
+  }
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Loading spinner enhancement */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Focus states for accessibility */
+@layer base {
+  .focus-visible {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background outline-none;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
