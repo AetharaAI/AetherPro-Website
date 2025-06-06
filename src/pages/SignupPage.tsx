@@ -1,13 +1,15 @@
-
-// pages/SignupPage.tsx - Signup Page
+// src/pages/SignupPage.tsx - Signup Page
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, Check } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { API_BASE_URL } from '../config'; // Import API_BASE_URL
 
 const SignupPage = () => {
-  const { signup, loginWithGoogle, loginWithGitHub } = useAuth();
+  const { signup } = useAuth(); // Only 'signup' needed for email/password form
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -53,6 +55,7 @@ const SignupPage = () => {
 
     try {
       await signup(formData.email, formData.password, formData.name);
+      navigate('/console'); // Redirect on successful signup
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
@@ -60,21 +63,18 @@ const SignupPage = () => {
     }
   };
 
-  const handleOAuthSignup = async (provider: 'google' | 'github') => {
-    setLoading(true);
-    setError('');
+  // Refactored OAuth signup handler: it redirects directly to FastAPI
+  const handleOAuthSignup = (provider: 'google' | 'github') => {
+    setLoading(true); // Set loading state immediately for UI feedback
+    setError(''); // Clear any previous errors
 
-    try {
-      if (provider === 'google') {
-        await loginWithGoogle();
-      } else {
-        await loginWithGitHub();
-      }
-    } catch (err: any) {
-      setError(err.message || `${provider} signup failed. Please try again.`);
-    } finally {
-      setLoading(false);
+    // The FastAPI endpoint will handle the OAuth flow and redirect back to frontend /auth/callback
+    if (provider === 'google') {
+      window.location.href = `${API_BASE_URL}/api/auth/google`; 
+    } else if (provider === 'github') {
+      window.location.href = `${API_BASE_URL}/api/auth/github`; 
     }
+    // No await here, as the page will navigate away
   };
 
   return (
