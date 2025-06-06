@@ -67,4 +67,4 @@ npm-debug.log*
 package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
-config.ts
+src/config.ts
