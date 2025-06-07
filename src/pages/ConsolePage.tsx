@@ -1,4 +1,4 @@
-// pages/ConsolePage.tsx - Fixed to use API service
+// src/pages/ConsolePage.tsx - Complete and Finalized Layout & Functionality
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -21,15 +21,19 @@ import {
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-// Import your API service instead of hardcoded URLs
+// Import your API service
 import { 
   getModules, 
   submitPrompt, 
   uploadFile, 
-  createWebSocketConnection 
-} from '../services/api';
+  createWebSocketConnection,
+  WebSocketMessage, // Import the specific WebSocketMessage type from api.ts
+  IndividualResponseMessage,
+  MergedResponseMessage
+} from '../services/api'; // Make sure this path is correct: src/services/api.ts
 
-// --- Type Definitions ---
+// --- Type Definitions (from api.ts or common types file) ---
+// Ensure these match your backend Agent/ModuleInfo structure and LLMResponse types
 interface Agent {
   id: string;
   name: string;
@@ -69,7 +73,7 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
 
   return (
-    <header className="aetherpro-nav px-6 py-4">
+    <header className="aetherpro-nav px-6 py-4 relative z-40"> {/* Higher z-index for Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -77,8 +81,8 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">AetherPro Console</h1>
           </div>
 
-          {/* Agent Selector */}
-          <div className="relative">
+          {/* Agent Selector - Z-INDEX FIX */}
+          <div className="relative z-50"> {/* Higher z-index for dropdown container */}
             <button
               onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
               className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -89,7 +93,7 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
             </button>
 
             {agentDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-64 aetherpro-modal rounded-lg shadow-lg z-50">
+              <div className="absolute top-full left-0 mt-2 w-64 aetherpro-modal rounded-lg shadow-lg z-50"> {/* Explicit z-50 */}
                 {availableAgents.map((agent: Agent) => (
                   <button
                     key={agent.id}
@@ -195,16 +199,19 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent default browser behavior
     setIsDragOver(true);
   }, [setIsDragOver]);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent default browser behavior
     setIsDragOver(false);
   }, [setIsDragOver]);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent default browser behavior
     setIsDragOver(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
     setFiles(prev => [...prev, ...droppedFiles]);
@@ -234,7 +241,8 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        onClick={() => fileInputRef.current?.click()} // Added click handler to drop zone
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
           isDragOver
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
             : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -242,10 +250,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
       >
         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-          Drop files here or <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >browse</button>
+          Drop files here or <span className="text-blue-600 hover:text-blue-700 font-medium">browse</span>
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           Supports: .txt, .csv, .md, .json, .jsonl, .odt, .zip, .pdf, .docx, .xlsx
@@ -288,7 +293,7 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
   );
 };
 
-// --- Code Block Component (unchanged) ---
+// --- Code Block Component ---
 const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
   code: string;
   language: string;
@@ -327,7 +332,7 @@ const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
   );
 };
 
-// --- Response Tab Component (unchanged) ---
+// --- Response Tab Component ---
 const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mergedContent }: {
   responses: Record<string, LLMResponse>;
   activeTab: string;
@@ -365,7 +370,7 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col"> {/* This flex-col and flex-1 are for its internal layout, not the scrolling */}
       {/* Tab Headers */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {Object.keys(responses).map(agentId => {
@@ -396,8 +401,8 @@ const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mer
         </button>
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      {/* Tab Content - This is the actual scrollable area for responses */}
+      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar"> {/* ADDED custom-scrollbar here */}
         {activeTab === 'merged' ? (
           <div className="space-y-6">
             {Object.keys(responses).length === 0 && !mergedContent && (
@@ -508,52 +513,6 @@ const ChatInterface = ({
       return;
     }
 
-    // Use API service WebSocket helper
-    interface WebSocketMessageBase {
-      type: string;
-      request_id?: string;
-      agent_id?: string;
-      error?: string;
-      details?: any;
-    }
-
-    interface IndividualResponseMessage extends WebSocketMessageBase {
-      type: 'individual_response';
-      request_id: string;
-      agent_id: string;
-      content: string;
-      version?: string;
-      tools?: string[];
-      error?: string;
-    }
-
-    interface MergedResponseMessage extends WebSocketMessageBase {
-      type: 'merged_response';
-      request_id: string;
-      content: string;
-      reasoning?: string;
-      error?: string;
-    }
-
-    interface SystemErrorMessage extends WebSocketMessageBase {
-      type: 'system_error';
-      error: string;
-      details?: any;
-    }
-
-    interface RequestErrorMessage extends WebSocketMessageBase {
-      type: 'error';
-      request_id: string;
-      error: string;
-    }
-
-    type WebSocketMessage =
-      | IndividualResponseMessage
-      | MergedResponseMessage
-      | SystemErrorMessage
-      | RequestErrorMessage
-      | WebSocketMessageBase;
-
     websocket.current = createWebSocketConnection(
       currentSessionId,
       (message: WebSocketMessage) => {
@@ -591,14 +550,6 @@ const ChatInterface = ({
             agent_id: 'system_error',
             error: message.error,
             reasoning: JSON.stringify(message.details || {})
-          });
-        } else if (message.type === 'error' && message.request_id === currentRequestIdRef.current) {
-          console.error('Request-specific Error from Backend:', message.error);
-          setIsLoadingRef.current(false);
-          setMergedResponseRef.current({
-              content: `An error occurred during processing: ${message.error}`,
-              agent_id: 'request_error',
-              error: message.error
           });
         } else {
             console.warn("WS Message received but not processed (ID mismatch or unexpected type):", message, "Frontend ReqID:", currentRequestIdRef.current);
@@ -684,16 +635,25 @@ const ChatInterface = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col console-container">
-      <ResponseTabs
-        responses={responses}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        availableAgents={availableAgents}
-        mergedContent={mergedResponse}
-      />
+    // This is the root div of the ChatInterface component.
+    // It needs to be a flex column and fill the height of its parent.
+    // Its direct children will be the scrollable message area and the fixed input area.
+    <div className="flex-1 flex flex-col h-full aetherpro-card"> {/* Added h-full and aetherpro-card here */}
+      {/* Scrollable Messages Area */}
+      {/* This div contains ResponseTabs and is responsible for its own scrolling */}
+      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar"> {/* ADDED custom-scrollbar here */}
+        <ResponseTabs
+          responses={responses}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          availableAgents={availableAgents}
+          mergedContent={mergedResponse}
+        />
+      </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 p-6 aetherpro-card">
+      {/* Sticky Message Input Area */}
+      {/* This div should NOT have overflow-y-auto or flex-1, as it's pinned. */}
+      <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-background z-10"> {/* Added bg-background and z-10 */}
         <div className="max-w-4xl mx-auto">
           <div className="mb-4">
             <FileUploadZone
@@ -765,7 +725,7 @@ const ConsolePage = () => {
         
         // Filter for modules that act as LLM agents and are running
         const agents: Agent[] = modules
-          .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner')))
+          .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner') || m.id.includes('structured_content_agent'))) // Added structured_content_agent
           .map((m: any) => ({
             id: m.id,
             name: m.name,
@@ -836,44 +796,47 @@ const ConsolePage = () => {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
     }
-  }, []);
+    // No need for theme-transition class application here, it's a CSS class defined in index.css
+    // Toggling the 'dark' class on `html` or `body` will automatically trigger the CSS transition.
+  }, [darkMode]); // Dependency on darkMode ensures it runs on toggle
+
 
   return (
-    <div className={`${darkMode ? 'dark' : ''}`}>
-      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <Header
-          darkMode={darkMode}
-          toggleDarkMode={toggleDarkMode}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
-          availableAgents={availableAgents}
+    <div className={`${darkMode ? 'dark' : ''} h-screen flex flex-col`}> {/* Set flex-col here */}
+      {/* Header takes fixed height */}
+      <Header
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        selectedAgent={selectedAgent}
+        setSelectedAgent={setSelectedAgent}
+        availableAgents={availableAgents}
+      />
+
+      {/* Main content area: flex-1 to take remaining height, flex container */}
+      <div className="flex-1 flex overflow-hidden"> {/* overflow-hidden on this flex-1 parent */}
+        {/* Sidebar takes fixed width */}
+        <Sidebar
+          conversations={conversations}
+          onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
         />
 
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar
-            conversations={conversations}
-            onNewChat={handleNewChat}
-            onSelectConversation={handleSelectConversation}
+        {/* Chat Interface: flex-1 to take remaining width, flex-col for its own content */}
+        <div className="flex-1 flex flex-col overflow-hidden"> {/* overflow-hidden here */}
+          <ChatInterface
+            selectedAgent={selectedAgent}
+            availableAgents={availableAgents}
+            currentSessionId={currentSessionId}
+            currentRequestId={currentRequestId}
+            setCurrentRequestId={setCurrentRequestId}
+            responses={responses}
+            setResponses={setResponses}
+            mergedResponse={mergedResponse}
+            setMergedResponse={setMergedResponse}
+            prompt={prompt}
+            setPrompt={setPrompt}
           />
-
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <ChatInterface
-              selectedAgent={selectedAgent}
-              availableAgents={availableAgents}
-              currentSessionId={currentSessionId}
-              currentRequestId={currentRequestId}
-              setCurrentRequestId={setCurrentRequestId}
-              responses={responses}
-              setResponses={setResponses}
-              mergedResponse={mergedResponse}
-              setMergedResponse={setMergedResponse}
-              prompt={prompt}
-              setPrompt={setPrompt}
-            />
-          </div>
         </div>
       </div>
     </div>

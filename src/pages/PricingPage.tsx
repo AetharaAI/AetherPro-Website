@@ -1,13 +1,22 @@
-
-// pages/PricingPage.tsx - Pricing Page
-import React, { useState } from 'react';
-import { Check, Zap, Crown, Rocket } from 'lucide-react';
+// pages/PricingPage.tsx - Pricing Page (Updated)
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate
+import { Check, Zap, Crown, Rocket, AlertCircle, CheckCircle, XCircle } from 'lucide-react'; // Added icons for feedback
 import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner'; // Assuming you have this component
+import { API_BASE_URL } from '../config'; // Import API_BASE_URL from your config
 
 const PricingPage = () => {
-  const { user } = useAuth();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+  const { user, isAuthenticated, token } = useAuth(); // Get isAuthenticated and token
+  const navigate = useNavigate(); // For programmatic navigation
 
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null); // State for which plan is loading
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Define your plans with Stripe Price IDs directly
+  // IMPORTANT: Replace 'price_12345...' with your actual Stripe Price IDs!
   const plans = [
     {
       name: 'Free',
@@ -27,12 +36,13 @@ const PricingPage = () => {
         'Limited to 2 concurrent requests'
       ],
       cta: 'Get Started Free',
-      popular: false
+      popular: false,
+      internalPlanName: 'free' // Matches user.plan
     },
     {
       name: 'Basic',
       icon: Crown,
-      price: { monthly: 29, annually: 25 },
+      price: { monthly: 29, annually: 25 }, // $25/month billed annually
       description: 'For growing teams and production applications',
       features: [
         '50,000 API calls per month',
@@ -48,12 +58,17 @@ const PricingPage = () => {
         'Standard SLA (99.5% uptime)'
       ],
       cta: 'Start Basic Plan',
-      popular: true
+      popular: true,
+      internalPlanName: 'basic', // Matches user.plan
+      stripePriceId: {
+        monthly: 'price_1RWxRGHctdijlUvAQ3p4V9qX', // e.g., 'price_1N2O3P4Q5R6S7T8U9V0W1X2Y'
+        annually: 'price_1RWxRGHctdijlUvACMAh87hY' // e.g., 'price_A1B2C3D4E5F6G7H8I9J0K1L2'
+      }
     },
     {
       name: 'Pro',
       icon: Rocket,
-      price: { monthly: 99, annually: 83 },
+      price: { monthly: 99, annually: 83 }, // $83/month billed annually
       description: 'For enterprises with advanced AI needs',
       features: [
         '500,000 API calls per month',
@@ -69,49 +84,128 @@ const PricingPage = () => {
       ],
       limitations: [],
       cta: 'Contact Sales',
-      popular: false
+      popular: false,
+      internalPlanName: 'pro', // Matches user.plan
+      stripePriceId: {
+        monthly: 'price_1RWxTjHctdijlUvAWTMmo4CF', 
+        annually: 'price_1RWxTjHctdijlUvApBfUCMEf'
+      }
     }
   ];
 
-  const handleSubscribe = async (planName: string) => {
-    if (!user) {
-      // Redirect to signup
-      window.location.href = '/signup';
+  const handleSubscribe = async (plan: typeof plans[0]) => { // Pass the whole plan object
+    setError(null); // Clear previous errors
+    setSuccessMessage(null); // Clear previous success messages
+
+    if (!isAuthenticated || !token || !user) {
+      // User is not logged in, redirect to login/signup page
+      navigate('/login'); 
       return;
     }
 
-    if (planName === 'Free') {
-      // Already on free plan or upgrade to free
+    if (user.plan === plan.internalPlanName) {
+      setError(`You are already on the ${plan.name} plan.`);
       return;
     }
 
-    if (planName === 'Pro') {
-      // Contact sales flow
+    if (plan.internalPlanName === 'free') {
+      // Logic for switching to free plan (if applicable and different from current)
+      // Usually, you can't "subscribe" to free via Stripe. This might be a backend API call
+      // or simply a no-op if user is already on free.
+      setSuccessMessage('You are on the Free plan. No action needed for this plan.');
+      return;
+    }
+
+    if (plan.internalPlanName === 'pro' && plan.cta === 'Contact Sales') {
+      // For Pro plan, redirect to sales contact
       window.location.href = 'mailto:sales@aetherpro.com';
       return;
     }
 
-    // Stripe checkout for Basic plan
+    setLoadingPlan(plan.name); // Set loading state for the specific plan
+
     try {
-      const response = await fetch('/api/stripe/create-checkout-session', {
+      // For Basic or other paid plans handled via Stripe Checkout
+      const response = await fetch(`${API_BASE_URL}/api/stripe/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${token}` // Use the token from AuthContext
         },
         body: JSON.stringify({
-          priceId: billingCycle === 'monthly' ? 'price_basic_monthly' : 'price_basic_annually',
-          successUrl: `${window.location.origin}/dashboard?upgrade=success`,
-          cancelUrl: `${window.location.origin}/pricing`
+          plan_name: plan.internalPlanName, // Send your internal plan name
+          // The backend will then map plan_name to the correct Stripe Price ID
+          billing_cycle: billingCycle // Send billing cycle to backend
         })
       });
 
-      const { url } = await response.json();
-      window.location.href = url;
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || `Failed to create checkout session for ${plan.name} plan.`);
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.session_url;
+    } catch (err: any) {
+      setError(err.message || 'Failed to initiate subscription. Please try again.');
+    } finally {
+      setLoadingPlan(null); // Reset loading state
     }
   };
+
+  const handleManageSubscription = async () => {
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!isAuthenticated || !token || !user) {
+      setError('Please log in to manage your your subscription.');
+      navigate('/login');
+      return;
+    }
+    if (user.plan === 'free') {
+      setError('You are on the Free plan. No subscription to manage via the Stripe customer portal.');
+      return;
+    }
+
+    setLoadingPlan('manage'); // Use a generic loading state for portal
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/stripe/create-customer-portal-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to create customer portal session.');
+      }
+
+      window.location.href = data.portal_url; // Redirect to Stripe Customer Portal
+    } catch (err: any) {
+      setError(err.message || 'Failed to open customer portal. Please try again.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+
+  // Display success/error messages from redirect (e.g., after checkout)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout_success') === 'true') {
+      setSuccessMessage('Subscription successful! Your plan has been updated.');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('checkout_canceled') === 'true') {
+      setError('Subscription checkout canceled. You were not charged.');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []); // Empty dependency array means this runs once on mount
 
   return (
     <div className="bg-white dark:bg-gray-900 py-12">
@@ -193,14 +287,15 @@ const PricingPage = () => {
                 <p className="text-gray-600 dark:text-gray-400 mb-6">{plan.description}</p>
 
                 <button
-                  onClick={() => handleSubscribe(plan.name)}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
+                  onClick={() => handleSubscribe(plan)} // Pass the whole plan object
+                  disabled={loadingPlan === plan.name || loadingPlan === 'manage'} // Disable if this plan is loading, or overall manage is loading
+                  className={`w-full flex justify-center items-center py-3 px-4 rounded-lg font-semibold transition-colors ${
                     plan.popular
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {plan.cta}
+                  {loadingPlan === plan.name ? <LoadingSpinner size="sm" /> : plan.cta}
                 </button>
 
                 <div className="mt-8">
@@ -231,6 +326,19 @@ const PricingPage = () => {
             </div>
           ))}
         </div>
+
+        {/* Manage Subscription Button (outside pricing cards) */}
+        {isAuthenticated && user && user.plan !== 'free' && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={handleManageSubscription}
+              disabled={loadingPlan === 'manage'}
+              className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
+            >
+              {loadingPlan === 'manage' ? <LoadingSpinner size="sm" /> : 'Manage Your Subscription'}
+            </button>
+          </div>
+        )}
 
         {/* FAQ Section */}
         <div className="mt-20">

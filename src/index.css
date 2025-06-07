@@ -1,159 +1,148 @@
-@import "tw-animate-css";
+/* src/index.css */
 
-@custom-variant dark (&:is(.dark *));
+/*
+   IMPORTANT: @import statements (including @tailwind directives)
+   MUST come before any other CSS declarations (like :root, .dark, @theme, or custom properties).
+   Only @charset rules can precede @import.
+*/
 
-@tailwind base; 
+
+/* 1. Tailwind CSS core directives - Updated to use @tailwind instead of @import */
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  
-  /* AetherPro Brand Colors */
-  --aetherpro-blue: #3b82f6;
-  --aetherpro-purple: #8b5cf6;
-  --aetherpro-gradient: linear-gradient(135deg, var(--aetherpro-blue), var(--aetherpro-purple));
-}
+/* 2. Third-party CSS imports (if any, like animations) */
+/* Note: tw-animate-css might not exist - remove if causing issues */
+/* @import "tw-animate-css"; */
 
+/* --- Custom CSS Variables & Theming --- */
+
+/* Base theme colors - for light mode by default */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.625rem; /* 10px */
   
-  /* Light theme colors - updated for better contrast with background */
-  --background: rgba(255, 255, 255, 0.95);
-  --foreground: oklch(0.147 0.004 49.25);
-  --card: rgba(255, 255, 255, 0.9);
-  --card-foreground: oklch(0.147 0.004 49.25);
+  /* AetherPro Brand Colors (Consistent across themes) */
+  --aetherpro-blue: #3b82f6; /* A vibrant blue */
+  --aetherpro-purple: #8b5cf6; /* A vibrant purple */
+  --aetherpro-gradient: linear-gradient(135deg, var(--aetherpro-blue), var(--aetherpro-purple));
+
+  /* Light Theme Colors (Adjusted for contrast and visual appeal) */
+  --background: #f8f8f8; /* Very light gray, almost white */
+  --foreground: #1a1a1a; /* Very dark gray for text */
+  --card: rgba(255, 255, 255, 0.9); /* Opaque white for cards */
+  --card-foreground: var(--foreground);
   --popover: rgba(255, 255, 255, 0.95);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.553 0.207 255.51); /* Blue */
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.923 0.003 48.717);
-  --secondary-foreground: oklch(0.147 0.004 49.25);
-  --muted: oklch(0.923 0.003 48.717);
-  --muted-foreground: oklch(0.4 0.01 240.5);
-  --accent: oklch(0.923 0.003 48.717);
-  --accent-foreground: oklch(0.147 0.004 49.25);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.85 0.003 48.717);
-  --input: rgba(255, 255, 255, 0.8);
+  --popover-foreground: var(--foreground);
+  --primary: #3b82f6; /* Brand blue */
+  --primary-foreground: #ffffff; /* White text on primary */
+  --secondary: #e0e0e0; /* Light gray for secondary elements */
+  --secondary-foreground: #333333; /* Dark gray for secondary text */
+  --muted: #f0f0f0; /* Muted background */
+  --muted-foreground: #666666; /* Muted text */
+  --accent: #e0e0e0; /* Accent background */
+  --accent-foreground: #333333; /* Accent text */
+  --destructive: #ef4444; /* Red for destructive actions */
+  --border: #d0d0d0; /* Light border color */
+  --input: rgba(255, 255, 255, 0.8); /* Input background with transparency */
   --ring: var(--aetherpro-blue);
   
-  /* Chart colors */
-  --chart-1: var(--aetherpro-blue);
-  --chart-2: var(--aetherpro-purple);
-  --chart-3: oklch(0.6 0.118 184.704);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Chart colors (example, adjust as needed) */
+  --chart-1: #3b82f6;
+  --chart-2: #8b5cf6;
+  --chart-3: #22c55e; /* Green */
+  --chart-4: #f97316; /* Orange */
+  --chart-5: #06b6d4; /* Cyan */
   
-  /* Sidebar colors */
+  /* Sidebar colors (example, adjust as needed) */
   --sidebar: rgba(255, 255, 255, 0.95);
-  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--aetherpro-blue);
-  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-accent: oklch(0.97 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-border: oklch(0.85 0.003 48.717);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #f0f0f0;
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #d0d0d0;
   --sidebar-ring: var(--aetherpro-blue);
 }
 
-.dark {
-  /* Dark theme colors - your existing setup enhanced */
-  --background: rgba(37, 37, 37, 0.95);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: rgba(55, 55, 55, 0.9);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: rgba(55, 55, 55, 0.95);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: var(--aetherpro-blue);
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.268 0.007 34.298);
-  --secondary-foreground: oklch(0.985 0.001 106.423);
-  --muted: oklch(0.268 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
-  --accent: oklch(0.268 0.007 34.298);
-  --accent-foreground: oklch(0.985 0.001 106.423);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 15%);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: var(--aetherpro-blue);
+/* Dark theme colors - applied when 'dark' class is present on html/body */
+html.dark, .dark { 
+  --background: #1a1a2e; /* Deep blue-purple background */
+  --foreground: #f0f0f0; /* Light text */
+  --card: rgba(30, 30, 45, 0.9); /* Slightly darker card with transparency */
+  --card-foreground: var(--foreground);
+  --popover: rgba(30, 30, 45, 0.95);
+  --popover-foreground: var(--foreground);
+  --primary: #6366f1; /* Slightly lighter blue-purple for dark theme primary */
+  --primary-foreground: #ffffff;
+  --secondary: #2f2f4a; /* Darker gray-purple for secondary */
+  --secondary-foreground: #cccccc;
+  --muted: #2f2f4a;
+  --muted-foreground: #aaaaaa;
+  --accent: #2f2f4a;
+  --accent-foreground: #cccccc;
+  --destructive: #ef4444;
+  --border: #3d3d5c; /* Darker border */
+  --input: rgba(50, 50, 70, 0.8); /* Input background with transparency */
+  --ring: #6366f1;
   
   /* Chart colors for dark mode */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --chart-1: #6366f1;
+  --chart-2: #a78bfa;
+  --chart-3: #34d399; /* Green */
+  --chart-4: #fbbf24; /* Yellow */
+  --chart-5: #22d3ee; /* Light blue */
   
   /* Sidebar colors for dark mode */
-  --sidebar: rgba(55, 55, 55, 0.95);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: var(--aetherpro-blue);
-  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-accent: oklch(0.268 0.007 34.298);
-  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 15%);
-  --sidebar-ring: var(--aetherpro-blue);
+  --sidebar: rgba(30, 30, 45, 0.95);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #2f2f4a;
+  --sidebar-accent-foreground: #cccccc;
+  --sidebar-border: #3d3d5c;
+  --sidebar-ring: var(--primary);
 }
 
+/* --- Tailwind Layers --- */
+
 @layer base {
+  /* Global reset/base styles */
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
   }
   
   html, body {
-    @apply text-foreground;
+    color: var(--foreground);
     min-height: 100vh;
     margin: 0;
     padding: 0;
   }
   
   body {
-    /* Your custom background - preserved */
-    background-image: url('/background.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    /* Base background color and custom image/pattern for the entire body */
+    background-color: var(--background);
+    transition: background-color 0.3s ease;
+
+    /* Custom background pattern - simulating circuitry effect */
+    background-image: 
+      /* Radial gradients for subtle "dots" or "nodes" */
+      radial-gradient(circle at 10% 20%, rgba(60, 60, 90, 0.3) 1px, transparent 1px),
+      radial-gradient(circle at 90% 80%, rgba(60, 60, 90, 0.3) 1px, transparent 1px),
+      radial-gradient(circle at 40% 60%, rgba(60, 60, 90, 0.3) 1px, transparent 1px),
+      /* Linear gradients for subtle "circuit lines" */
+      linear-gradient(to right, rgba(60, 60, 90, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(60, 60, 90, 0.1) 1px, transparent 1px);
     
-    /* Overlay to ensure readability */
+    background-size: 40px 40px;
+    background-position: center center;
+    background-attachment: fixed;
+    background-repeat: repeat;
     position: relative;
   }
   
-  /* Optional: Add a subtle overlay for better text readability */
+  /* Overlay for patterned background */
   body::before {
     content: '';
     position: fixed;
@@ -166,77 +155,96 @@
     z-index: -1;
   }
   
+  /* Dark mode specific overlay adjustments */
   .dark body::before {
     background: rgba(0, 0, 0, 0.3);
   }
 }
 
 @layer components {
-  /* AetherPro specific component styles */
+  /* AetherPro specific component styles using CSS variables and Tailwind @apply */
   .aetherpro-gradient {
     background: var(--aetherpro-gradient);
   }
   
   .aetherpro-card {
-    @apply bg-card/90 border border-border/50;
+    background-color: var(--card);
+    border: 1px solid var(--border);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
   
   .aetherpro-nav {
-    @apply bg-background/80 border-b border-border/50;
+    background-color: var(--background);
+    border-bottom: 1px solid var(--border);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
   
   .aetherpro-hero {
-    background: linear-gradient(135deg, var(--aetherpro-blue), var(--aetherpro-purple));
+    background: var(--aetherpro-gradient);
   }
   
-  /* Console specific styles */
   .console-container {
-    @apply bg-background/95;
+    background-color: var(--background);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
   
-  /* Form elements with background transparency */
   .aetherpro-input {
-    @apply bg-input/80 border-border/50 focus:bg-input/90;
+    background-color: var(--input);
+    border: 1px solid var(--border);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
   
-  /* Modal backgrounds */
+  .aetherpro-input:focus {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-color: var(--ring);
+  }
+  
   .aetherpro-modal {
-    @apply bg-card/95 border border-border/50;
+    background-color: var(--card);
+    border: 1px solid var(--border);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
   
-  /* Special styling for code blocks */
   .aetherpro-code {
-    @apply bg-gray-900/90;
+    @apply bg-gray-900;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
   
-  /* Dashboard cards */
   .dashboard-card {
-    @apply bg-card/80 border border-border/30 hover:bg-card/90 transition-all duration-200;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    @apply transition-all duration-200;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
   
-  /* Pricing cards */
+  .dashboard-card:hover {
+    background-color: color-mix(in srgb, var(--card) 90%, transparent);
+  }
+  
   .pricing-card {
-    @apply bg-card/85 border border-border/40 hover:border-primary/50 transition-all duration-300;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    @apply transition-all duration-300;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+  }
+  
+  .pricing-card:hover {
+    border-color: var(--primary);
   }
   
   .pricing-card.popular {
-    @apply border-primary ring-2 ring-primary/20 bg-card/90;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+    background-color: var(--card);
   }
 }
 
@@ -257,11 +265,13 @@
   .glass-morphism {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    @apply bg-white/10 border border-white/20;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
   .dark .glass-morphism {
-    @apply bg-black/10 border-white/10;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   /* Smooth transitions for theme switching */
@@ -275,15 +285,20 @@
   }
   
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-muted/30;
+    background-color: color-mix(in srgb, var(--muted) 30%, transparent);
   }
   
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-primary/50 rounded-full hover:bg-primary/70;
+    background-color: color-mix(in srgb, var(--primary) 50%, transparent);
+    border-radius: 9999px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--primary) 70%, transparent);
   }
 }
 
-/* Animation keyframes */
+/* --- Animation Keyframes --- */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -309,21 +324,14 @@
   animation: spin 1s linear infinite;
 }
 
-/* Focus states for accessibility */
-@layer base {
-  .focus-visible {
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background outline-none;
-  }
-}
-
-/* Print styles */
+/* --- Print Styles --- */
 @media print {
   body {
     background: white !important;
     color: black !important;
   }
   
-    .no-print {
-      display: none !important;
-    }
+  .no-print {
+    display: none !important;
   }
+}
