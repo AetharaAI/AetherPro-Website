@@ -1,4 +1,4 @@
-// pages/PricingPage.tsx - Pricing Page (Updated)
+// pages/PricingPage.tsx - Fixed with Debug Logging
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate
 import { Check, Zap, Crown, Rocket, AlertCircle, CheckCircle, XCircle } from 'lucide-react'; // Added icons for feedback
@@ -94,16 +94,28 @@ const PricingPage = () => {
   ];
 
   const handleSubscribe = async (plan: typeof plans[0]) => { // Pass the whole plan object
+    // 🔍 DEBUG: Add comprehensive logging
+    console.log('=== STRIPE SUBSCRIPTION DEBUG START ===');
+    console.log('💳 Plan clicked:', plan.name);
+    console.log('💳 Plan object:', plan);
+    console.log('💳 Billing cycle:', billingCycle);
+    console.log('💳 User authenticated:', isAuthenticated);
+    console.log('💳 Token exists:', !!token);
+    console.log('💳 User object:', user);
+    console.log('💳 API_BASE_URL:', API_BASE_URL);
+
     setError(null); // Clear previous errors
     setSuccessMessage(null); // Clear previous success messages
 
     if (!isAuthenticated || !token || !user) {
       // User is not logged in, redirect to login/signup page
+      console.log('❌ User not authenticated, redirecting to login');
       navigate('/login'); 
       return;
     }
 
     if (user.plan === plan.internalPlanName) {
+      console.log('❌ User already on this plan');
       setError(`You are already on the ${plan.name} plan.`);
       return;
     }
@@ -112,12 +124,14 @@ const PricingPage = () => {
       // Logic for switching to free plan (if applicable and different from current)
       // Usually, you can't "subscribe" to free via Stripe. This might be a backend API call
       // or simply a no-op if user is already on free.
+      console.log('ℹ️ Free plan selected');
       setSuccessMessage('You are on the Free plan. No action needed for this plan.');
       return;
     }
 
     if (plan.internalPlanName === 'pro' && plan.cta === 'Contact Sales') {
       // For Pro plan, redirect to sales contact
+      console.log('📧 Pro plan selected, redirecting to sales');
       window.location.href = 'mailto:sales@aetherpro.com';
       return;
     }
@@ -125,6 +139,20 @@ const PricingPage = () => {
     setLoadingPlan(plan.name); // Set loading state for the specific plan
 
     try {
+      // Prepare the payload
+      const payload = {
+        plan_name: plan.internalPlanName, // Send your internal plan name
+        billing_cycle: billingCycle // Send billing cycle to backend
+      };
+
+      console.log('📤 Preparing to send request...');
+      console.log('📤 Payload:', payload);
+      console.log('📤 URL:', `${API_BASE_URL}/api/stripe/create-checkout-session`);
+      console.log('📤 Headers:', {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token ? token.substring(0, 20) + '...' : 'none'}`
+      });
+
       // For Basic or other paid plans handled via Stripe Checkout
       const response = await fetch(`${API_BASE_URL}/api/stripe/create-checkout-session`, {
         method: 'POST',
@@ -132,29 +160,53 @@ const PricingPage = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` // Use the token from AuthContext
         },
-        body: JSON.stringify({
-          plan_name: plan.internalPlanName, // Send your internal plan name
-          // The backend will then map plan_name to the correct Stripe Price ID
-          billing_cycle: billingCycle // Send billing cycle to backend
-        })
+        body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      console.log('📥 Response received:');
+      console.log('📥 Status:', response.status);
+      console.log('📥 Status text:', response.statusText);
+      console.log('📥 Headers:', Object.fromEntries(response.headers.entries()));
 
-      if (!response.ok) {
-        throw new Error(data.detail || `Failed to create checkout session for ${plan.name} plan.`);
+      // Try to get response text first
+      const responseText = await response.text();
+      console.log('📥 Raw response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('📥 Parsed response data:', data);
+      } catch (parseError) {
+        console.error('❌ Failed to parse response as JSON:', parseError);
+        throw new Error(`Invalid response format: ${responseText}`);
       }
 
+      if (!response.ok) {
+        console.error('❌ Response not OK:', response.status, data);
+        throw new Error(data.detail || data.message || `Failed to create checkout session for ${plan.name} plan. Status: ${response.status}`);
+      }
+
+      if (!data.session_url) {
+        console.error('❌ No session_url in response:', data);
+        throw new Error('No checkout session URL received from server');
+      }
+
+      console.log('✅ Success! Redirecting to:', data.session_url);
       // Redirect to Stripe Checkout
       window.location.href = data.session_url;
+
     } catch (err: any) {
+      console.error('❌ Subscription error:', err);
+      console.error('❌ Error stack:', err.stack);
       setError(err.message || 'Failed to initiate subscription. Please try again.');
     } finally {
       setLoadingPlan(null); // Reset loading state
+      console.log('=== STRIPE SUBSCRIPTION DEBUG END ===');
     }
   };
 
   const handleManageSubscription = async () => {
+    console.log('🔧 Manage subscription clicked');
     setError(null);
     setSuccessMessage(null);
 
@@ -192,6 +244,14 @@ const PricingPage = () => {
     }
   };
 
+  // Debug auth state on component mount
+  useEffect(() => {
+    console.log('🔍 PricingPage mounted - Auth state:');
+    console.log('🔍 isAuthenticated:', isAuthenticated);
+    console.log('🔍 token exists:', !!token);
+    console.log('🔍 user:', user);
+    console.log('🔍 API_BASE_URL:', API_BASE_URL);
+  }, [isAuthenticated, token, user]);
 
   // Display success/error messages from redirect (e.g., after checkout)
   useEffect(() => {
@@ -210,6 +270,32 @@ const PricingPage = () => {
   return (
     <div className="bg-white dark:bg-gray-900 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Debug Info Panel (only show in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <h3 className="font-bold mb-2">Debug Info:</h3>
+            <p>Authenticated: {isAuthenticated ? '✅' : '❌'}</p>
+            <p>User Plan: {user?.plan || 'none'}</p>
+            <p>Token: {token ? '✅' : '❌'}</p>
+            <p>API URL: {API_BASE_URL}</p>
+          </div>
+        )}
+
+        {/* Error/Success Messages */}
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center space-x-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-300">{error}</span>
+          </div>
+        )}
+        
+        {successMessage && (
+          <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-green-700 dark:text-green-300">{successMessage}</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">

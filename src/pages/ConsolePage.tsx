@@ -1,4 +1,4 @@
-// src/pages/ConsolePage.tsx - Complete and Finalized Layout & Functionality
+// src/pages/ConsolePage.tsx - Fixed with stable WebSocket and other corrections
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -17,7 +17,9 @@ import {
   Archive,
   Plus,
   MessageSquare,
-  Upload
+  Upload,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -27,13 +29,12 @@ import {
   submitPrompt, 
   uploadFile, 
   createWebSocketConnection,
-  WebSocketMessage, // Import the specific WebSocketMessage type from api.ts
+  WebSocketMessage,
   IndividualResponseMessage,
   MergedResponseMessage
-} from '../services/api'; // Make sure this path is correct: src/services/api.ts
+} from '../services/api';
 
-// --- Type Definitions (from api.ts or common types file) ---
-// Ensure these match your backend Agent/ModuleInfo structure and LLMResponse types
+// Enhanced types for conversation history
 interface Agent {
   id: string;
   name: string;
@@ -43,12 +44,24 @@ interface Agent {
   version?: string; 
 }
 
+interface ChatTurn {
+  id: string;
+  timestamp: string;
+  prompt: string;
+  files?: { filename: string; size: number; content_type: string }[];
+  responses: Record<string, LLMResponse>;
+  mergedResponse: LLMResponse | null;
+  selectedAgent: Agent;
+}
+
 interface Conversation {
   id: string;
   title: string;
   timestamp: string;
+  lastUpdated: string;
   agent?: string; 
-  turns?: any[]; 
+  turns: ChatTurn[];
+  userId?: string;
 }
 
 interface LLMResponse {
@@ -62,7 +75,114 @@ interface LLMResponse {
   source_agents?: string[];
 }
 
-// --- Header Component ---
+// Enhanced Conversation API functions
+const conversationAPI = {
+  // Get all conversations for current user
+  getConversations: async (): Promise<Conversation[]> => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      // Fallback to localStorage for development
+      const stored = localStorage.getItem('aetherpro_conversations');
+      return stored ? JSON.parse(stored) : [];
+    }
+  },
+
+  // Save a conversation
+  saveConversation: async (conversation: Conversation): Promise<void> => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(conversation)
+      });
+      if (!response.ok) throw new Error('Failed to save conversation');
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+      // Fallback to localStorage for development
+      const stored = localStorage.getItem('aetherpro_conversations');
+      const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+      const existingIndex = conversations.findIndex(c => c.id === conversation.id);
+      if (existingIndex >= 0) {
+        conversations[existingIndex] = conversation;
+      } else {
+        conversations.unshift(conversation);
+      }
+      localStorage.setItem('aetherpro_conversations', JSON.stringify(conversations));
+    }
+  },
+
+  // Delete a conversation
+  deleteConversation: async (conversationId: string): Promise<void> => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch(`/api/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to delete conversation');
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      // Fallback to localStorage for development
+      const stored = localStorage.getItem('aetherpro_conversations');
+      const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+      const filtered = conversations.filter(c => c.id !== conversationId);
+      localStorage.setItem('aetherpro_conversations', JSON.stringify(filtered));
+    }
+  },
+
+  // Update conversation title
+  updateConversationTitle: async (conversationId: string, title: string): Promise<void> => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch(`/api/conversations/${conversationId}/title`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title })
+      });
+      if (!response.ok) throw new Error('Failed to update conversation title');
+    } catch (error) {
+      console.error('Error updating conversation title:', error);
+      // Fallback to localStorage for development
+      const stored = localStorage.getItem('aetherpro_conversations');
+      const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation) {
+        conversation.title = title;
+        conversation.lastUpdated = new Date().toISOString();
+        localStorage.setItem('aetherpro_conversations', JSON.stringify(conversations));
+      }
+    }
+  }
+};
+
+// Utility function to generate conversation title from first prompt
+const generateConversationTitle = (prompt: string): string => {
+  const words = prompt.trim().split(/\s+/).slice(0, 6);
+  const title = words.join(' ');
+  return title.length > 50 ? title.substring(0, 47) + '...' : title;
+};
+
+// --- Header Component with Logo ---
 const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, availableAgents }: {
   darkMode: boolean;
   toggleDarkMode: () => void;
@@ -73,16 +193,27 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
 
   return (
-    <header className="aetherpro-nav px-6 py-4 relative z-40"> {/* Higher z-index for Header */}
+    <header className="aetherpro-nav px-6 py-4 relative z-40">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"></div>
+            <img 
+              src="/aether-logo.png" 
+              alt="AetherPro Logo" 
+              className="w-8 h-8 object-contain"
+              onError={(e) => {
+                // Fallback to gradient if logo fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'block';
+              }}
+            />
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg" style={{display: 'none'}}></div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">AetherPro Console</h1>
           </div>
 
-          {/* Agent Selector - Z-INDEX FIX */}
-          <div className="relative z-50"> {/* Higher z-index for dropdown container */}
+          <div className="relative z-50">
             <button
               onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
               className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -93,7 +224,7 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
             </button>
 
             {agentDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-64 aetherpro-modal rounded-lg shadow-lg z-50"> {/* Explicit z-50 */}
+              <div className="absolute top-full left-0 mt-2 w-64 aetherpro-modal rounded-lg shadow-lg z-50">
                 {availableAgents.map((agent: Agent) => (
                   <button
                     key={agent.id}
@@ -136,15 +267,76 @@ const Header = ({ darkMode, toggleDarkMode, selectedAgent, setSelectedAgent, ava
   );
 };
 
-// --- Sidebar Component ---
-const Sidebar = ({ conversations, onNewChat, onSelectConversation }: {
+// --- Enhanced Sidebar Component with History Management and Logo ---
+const Sidebar = ({ 
+  conversations, 
+  onNewChat, 
+  onSelectConversation, 
+  currentConversationId,
+  onDeleteConversation,
+  onRenameConversation
+}: {
   conversations: Conversation[];
   onNewChat: () => void;
   onSelectConversation: (conversation: Conversation) => void;
+  currentConversationId: string;
+  onDeleteConversation: (conversationId: string) => void;
+  onRenameConversation: (conversationId: string, newTitle: string) => void;
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  const handleStartEdit = (conversation: Conversation) => {
+    setEditingId(conversation.id);
+    setEditTitle(conversation.title);
+  };
+
+  const handleSaveEdit = (conversationId: string) => {
+    if (editTitle.trim()) {
+      onRenameConversation(conversationId, editTitle.trim());
+    }
+    setEditingId(null);
+    setEditTitle('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditTitle('');
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
   return (
     <aside className="w-80 aetherpro-card border-r flex flex-col">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-2 mb-4">
+          <img 
+            src="/aether-logo.png" 
+            alt="AetherPro Logo" 
+            className="w-6 h-6 object-contain"
+            onError={(e) => {
+              // Fallback to gradient if logo fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'block';
+            }}
+          />
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md" style={{display: 'none'}}></div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AetherPro</h2>
+        </div>
         <button
           onClick={onNewChat}
           className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -157,34 +349,209 @@ const Sidebar = ({ conversations, onNewChat, onSelectConversation }: {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-            Recent Conversations
+            Conversations ({conversations.length})
           </h3>
           {conversations.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-sm italic">No conversations yet.</p>
           ) : (
             conversations.map((conv: Conversation) => (
-              <button
+              <div
                 key={conv.id}
-                onClick={() => onSelectConversation(conv)}
-                className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                className={`relative group rounded-lg transition-colors ${
+                  conv.id === currentConversationId 
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {conv.title}
-                    </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {conv.timestamp} {conv.agent && `• ${conv.agent}`}
-                    </p>
+                {/* FIX: Changed outer element from <button> to <div> to prevent nesting errors */}
+                <div
+                  onClick={() => onSelectConversation(conv)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectConversation(conv)}
+                  role="button"
+                  tabIndex={0}
+                  className="w-full text-left p-3 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      {editingId === conv.id ? (
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onBlur={() => handleSaveEdit(conv.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit(conv.id);
+                            if (e.key === 'Escape') handleCancelEdit();
+                          }}
+                          className="w-full bg-transparent border border-blue-500 rounded px-1 text-sm font-medium text-gray-900 dark:text-white"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {conv.title}
+                        </h4>
+                      )}
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>{formatDate(conv.lastUpdated)}</span>
+                        {conv.turns.length > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>{conv.turns.length} turn{conv.turns.length !== 1 ? 's' : ''}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEdit(conv);
+                        }}
+                        className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                        title="Rename conversation"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Are you sure you want to delete this conversation?')) {
+                            onDeleteConversation(conv.id);
+                          }
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                  <MessageSquare className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>
       </div>
     </aside>
+  );
+};
+
+// --- Enhanced Chat History Display Component ---
+const ChatHistory = ({ conversation, availableAgents }: { 
+  conversation: Conversation | null;
+  availableAgents: Agent[];
+}) => {
+  if (!conversation || conversation.turns.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        <div className="text-center">
+          <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>Start a conversation to see the history here.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderResponseContent = (content: string) => {
+    return content.split('```').map((part, index) => {
+      if (index % 2 === 1) {
+        const [lang, ...codeLines] = part.split('\n');
+        const code = codeLines.join('\n');
+        return (
+          <div key={index} className="aetherpro-code rounded-lg overflow-hidden my-4">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+              <span className="text-sm text-gray-300">{lang || 'plaintext'}</span>
+              <button 
+                onClick={() => navigator?.clipboard?.writeText(code)}
+                className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                title="Copy code"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+            <pre className="p-4 text-sm text-gray-100 overflow-x-auto">
+              <code>{code}</code>
+            </pre>
+          </div>
+        );
+      }
+      return <div key={index} className="whitespace-pre-wrap">{part}</div>;
+    });
+  };
+
+  return (
+    <div className="flex-1 space-y-6 p-6">
+      {conversation.turns.map((turn, index) => (
+        <div key={turn.id} className="space-y-4">
+          {/* User Message */}
+          <div className="flex justify-end">
+            <div className="max-w-3xl bg-blue-600 text-white rounded-lg p-4">
+              <div className="whitespace-pre-wrap">{turn.prompt}</div>
+              {turn.files && turn.files.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-blue-500">
+                  <div className="text-xs text-blue-100 mb-1">Attached files:</div>
+                  {turn.files.map((file, fileIndex) => (
+                    <div key={fileIndex} className="text-xs text-blue-200">
+                      📎 {file.filename} ({(file.size / 1024).toFixed(1)} KB)
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="text-xs text-blue-200 mt-2">
+                {new Date(turn.timestamp).toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          {/* Assistant Responses */}
+          <div className="space-y-3">
+            {Object.entries(turn.responses).map(([agentId, response]) => {
+              const agent = availableAgents.find(a => a.id === agentId);
+              return (
+                <div key={agentId} className="dashboard-card rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    {agent?.name || agentId}
+                  </h4>
+                  <div className="prose dark:prose-invert max-w-none">
+                    {response.error ? (
+                      <p className="text-red-500 dark:text-red-400">Error: {response.error}</p>
+                    ) : (
+                      renderResponseContent(response.content)
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {turn.mergedResponse && (
+              <div className="border border-blue-300 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">
+                  🔮 Orchestrated Response
+                </h4>
+                <div className="prose dark:prose-invert max-w-none">
+                  {turn.mergedResponse.error ? (
+                    <p className="text-red-500 dark:text-red-400">Error: {turn.mergedResponse.error}</p>
+                  ) : (
+                    renderResponseContent(turn.mergedResponse.content)
+                  )}
+                  {turn.mergedResponse.reasoning && (
+                    <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2">
+                      Reasoning: {turn.mergedResponse.reasoning}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {index < conversation.turns.length - 1 && (
+            <hr className="border-gray-200 dark:border-gray-700" />
+          )}
+        </div>
+      ))}
+    </div>
   );
 };
 
@@ -199,19 +566,19 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent default browser behavior
+    e.stopPropagation();
     setIsDragOver(true);
   }, [setIsDragOver]);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent default browser behavior
+    e.stopPropagation();
     setIsDragOver(false);
   }, [setIsDragOver]);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent default browser behavior
+    e.stopPropagation();
     setIsDragOver(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
     setFiles(prev => [...prev, ...droppedFiles]);
@@ -236,12 +603,11 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
 
   return (
     <div className="space-y-3">
-      {/* Drop Zone */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()} // Added click handler to drop zone
+        onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
           isDragOver
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -265,7 +631,6 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
         />
       </div>
 
-      {/* File List */}
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file, index) => (
@@ -293,422 +658,14 @@ const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: {
   );
 };
 
-// --- Code Block Component ---
-const CodeBlock = ({ code, language, version, onCopy, onDownload, onPublish }: {
-  code: string;
-  language: string;
-  version?: string;
-  onCopy: () => void;
-  onDownload: () => void;
-  onPublish: () => void;
-}) => {
-  return (
-    <div className="aetherpro-code rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-300">{language}</span>
-          {version && (
-            <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
-              {version}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={onCopy} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Copy code">
-            <Copy className="w-4 h-4" />
-          </button>
-          <button onClick={onDownload} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Download as file">
-            <Download className="w-4 h-4" />
-          </button>
-          <button onClick={onPublish} className="p-1.5 text-gray-400 hover:text-white transition-colors" title="Publish tool">
-            <Share className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <pre className="p-4 text-sm text-gray-100 overflow-x-auto">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-};
-
-// --- Response Tab Component ---
-const ResponseTabs = ({ responses, activeTab, setActiveTab, availableAgents, mergedContent }: {
-  responses: Record<string, LLMResponse>;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  availableAgents: Agent[];
-  mergedContent: LLMResponse | null;
-}) => {
-  const renderResponseContent = (content: string, responseMeta: LLMResponse) => {
-    return content.split('```').map((part, index) => {
-      if (index % 2 === 1) {
-        const [lang, ...codeLines] = part.split('\n');
-        const code = codeLines.join('\n');
-        return (
-          <CodeBlock
-            key={index}
-            code={code}
-            language={lang || 'plaintext'}
-            version={responseMeta.version}
-            onCopy={() => navigator?.clipboard?.writeText(code)}
-            onDownload={() => {
-              const blob = new Blob([code], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `code.${lang || 'txt'}`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            onPublish={() => console.log('Publishing tool...')}
-          />
-        );
-      }
-      return <div key={index} className="whitespace-pre-wrap">{part}</div>;
-    });
-  };
-
-  return (
-    <div className="flex-1 flex flex-col"> {/* This flex-col and flex-1 are for its internal layout, not the scrolling */}
-      {/* Tab Headers */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-        {Object.keys(responses).map(agentId => {
-          const agent = availableAgents.find((a: Agent) => a.id === agentId);
-          return (
-            <button
-              key={agentId}
-              onClick={() => setActiveTab(agentId)}
-              className={`flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === agentId
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              {agent?.name || agentId}
-            </button>
-          );
-        })}
-        <button
-          onClick={() => setActiveTab('merged')}
-          className={`flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'merged'
-              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          Merged View
-        </button>
-      </div>
-
-      {/* Tab Content - This is the actual scrollable area for responses */}
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar"> {/* ADDED custom-scrollbar here */}
-        {activeTab === 'merged' ? (
-          <div className="space-y-6">
-            {Object.keys(responses).length === 0 && !mergedContent && (
-                <p className="text-gray-500 dark:text-gray-400 italic">No responses yet. Start a conversation!</p>
-            )}
-            {Object.entries(responses).map(([agentId, response]: [string, LLMResponse]) => (
-              <div key={agentId} className="dashboard-card rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                  {availableAgents.find((a: Agent) => a.id === agentId)?.name || agentId} Response
-                </h3>
-                <div className="prose dark:prose-invert max-w-none">
-                  {response.error ? (
-                    <p className="text-red-500 dark:text-red-400">Error: {response.error}</p>
-                  ) : (
-                    renderResponseContent(response.content, response)
-                  )}
-                </div>
-              </div>
-            ))}
-            {mergedContent && (
-                <div className="border border-blue-300 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
-                    <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">
-                        Orchestrated/Merged Response
-                    </h3>
-                    <div className="prose dark:prose-invert max-w-none">
-                        {mergedContent.content && renderResponseContent(mergedContent.content, mergedContent)}
-                        {mergedContent.reasoning && <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2">Reasoning: {mergedContent.reasoning}</p>}
-                        {mergedContent.error && <p className="text-red-500 dark:text-red-400 mt-2">Error: {mergedContent.error}</p>}
-                    </div>
-                </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="prose dark:prose-invert max-w-none">
-              {responses[activeTab] ? (
-                responses[activeTab].error ? (
-                  <p className="text-red-500 dark:text-red-400">Error: {responses[activeTab].error}</p>
-                ) : (
-                  renderResponseContent(responses[activeTab].content, responses[activeTab])
-                )
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 italic">No response for this agent yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Main Chat Interface Component (Updated to use API service) ---
-const ChatInterface = ({
-  selectedAgent,
-  availableAgents,
-  currentSessionId,
-  currentRequestId,
-  setCurrentRequestId,
-  responses,
-  setResponses,
-  mergedResponse,
-  setMergedResponse,
-  prompt,
-  setPrompt,
-}: {
-  selectedAgent: Agent;
-  availableAgents: Agent[];
-  currentSessionId: string;
-  currentRequestId: string | null;
-  setCurrentRequestId: (id: string | null) => void;
-  responses: Record<string, LLMResponse>;
-  setResponses: React.Dispatch<React.SetStateAction<Record<string, LLMResponse>>>;
-  mergedResponse: LLMResponse | null;
-  setMergedResponse: React.Dispatch<React.SetStateAction<LLMResponse | null>>;
-  prompt: string;
-  setPrompt: React.Dispatch<React.SetStateAction<string>>;
-}) => {
-  const [files, setFiles] = useState<File[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const websocket = useRef<WebSocket | null>(null);
-  const currentRequestIdRef = useRef<string | null>(null);
-  const responsesRef = useRef<Record<string, LLMResponse>>({});
-  const mergedResponseRef = useRef<LLMResponse | null>(null);
-  const setIsLoadingRef = useRef<React.Dispatch<React.SetStateAction<boolean>>>(() => {});
-  const setResponsesRef = useRef<React.Dispatch<React.SetStateAction<Record<string, LLMResponse>>>>(() => {});
-  const setMergedResponseRef = useRef<React.Dispatch<React.SetStateAction<LLMResponse | null>>>(() => {});
-
-  // Keep refs updated
-  useEffect(() => { currentRequestIdRef.current = currentRequestId; }, [currentRequestId]);
-  useEffect(() => { responsesRef.current = responses; }, [responses]);
-  useEffect(() => { mergedResponseRef.current = mergedResponse; }, [mergedResponse]);
-  useEffect(() => { setIsLoadingRef.current = setIsLoading; }, [setIsLoading]);
-  useEffect(() => { setResponsesRef.current = setResponses; }, [setResponses]);
-  useEffect(() => { setMergedResponseRef.current = setMergedResponse; }, [setMergedResponse]);
-
-  // WebSocket connection setup using API service
-  useEffect(() => {
-    if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
-      websocket.current.close();
-      websocket.current = null;
-    }
-
-    if (!currentSessionId) {
-      console.warn("No currentSessionId, delaying WebSocket connection.");
-      return;
-    }
-
-    websocket.current = createWebSocketConnection(
-      currentSessionId,
-      (message: WebSocketMessage) => {
-        console.log('WS Message received:', message);
-        console.log('Current Request ID (frontend state - from ref):', currentRequestIdRef.current);
-        console.log('Message Request ID (from backend):', message.request_id);
-
-        if (message.type === 'individual_response' && message.request_id === currentRequestIdRef.current) {
-          setResponsesRef.current((prev: Record<string, LLMResponse>) => {
-            const newResponses = { ...prev };
-            newResponses[message.agent_id as string] = {
-              content: (message as IndividualResponseMessage).content,
-              version: (message as IndividualResponseMessage).version,
-              tools: (message as IndividualResponseMessage).tools,
-              error: message.error
-            };
-            console.log('Updating individual responses:', newResponses);
-            return newResponses;
-          });
-          setIsLoadingRef.current(true);
-        } else if (message.type === 'merged_response' && message.request_id === currentRequestIdRef.current) {
-          setMergedResponseRef.current({
-              content: (message as MergedResponseMessage).content,
-              agent_id: 'merged',
-              reasoning: (message as MergedResponseMessage).reasoning,
-              error: message.error,
-          });
-          setIsLoadingRef.current(false);
-          console.log('Updating merged response and setting isLoading to false.');
-        } else if (message.type === 'system_error') {
-          console.error('System Error from Backend:', message.error, message.details);
-          setIsLoadingRef.current(false);
-          setMergedResponseRef.current({
-            content: `A system error occurred: ${message.error || 'Unknown error'}`,
-            agent_id: 'system_error',
-            error: message.error,
-            reasoning: JSON.stringify(message.details || {})
-          });
-        } else {
-            console.warn("WS Message received but not processed (ID mismatch or unexpected type):", message, "Frontend ReqID:", currentRequestIdRef.current);
-        }
-      },
-      (error: Event) => console.error('WebSocket error:', error),
-      (event: CloseEvent) => console.log('WebSocket closed:', event.code, event.reason)
-    );
-
-    return () => {
-      if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
-        websocket.current.close();
-      }
-    };
-  }, [currentSessionId]);
-
-  const [activeTab, setActiveTab] = useState('merged');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!prompt.trim() && files.length === 0) return;
-
-    setIsLoading(true);
-    setResponses({});
-    setMergedResponse(null);
-    const newRequestId = uuidv4();
-    setCurrentRequestId(newRequestId);
-    currentRequestIdRef.current = newRequestId;
-    setActiveTab('merged');
-
-    try {
-      // 1. Upload files using API service
-      const uploadedFilePaths: { filename: string; temp_path: string; size: number; content_type: string }[] = [];
-      for (const file of files) {
-        try {
-          const data = await uploadFile(file);
-          uploadedFilePaths.push({
-            filename: data.filename,
-            temp_path: data.temp_path,
-            size: data.size,
-            content_type: data.content_type
-          });
-          console.log(`Uploaded ${file.name} to ${data.temp_path}`);
-        } catch (error: any) {
-          console.error(`Error during file upload for ${file.name}:`, error);
-          setMergedResponse({ content: `Error during file upload: ${error.message}`, error: error.message });
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // 2. Send prompt using API service
-      console.log('Submitting prompt:', prompt);
-      console.log('Current Session ID:', currentSessionId);
-      console.log('Current Request ID:', newRequestId);
-      console.log('Selected Agent:', selectedAgent);
-      console.log('Uploaded File Paths:', uploadedFilePaths);
-
-      const selectedAgents = selectedAgent.id !== 'merged' ? [selectedAgent.id] : null;
-
-      await submitPrompt(
-        prompt,
-        currentSessionId,
-        selectedAgents,
-        newRequestId,
-        uploadedFilePaths
-      );
-
-      console.log('Prompt submitted successfully. Waiting for WebSocket responses.');
-      setPrompt('');
-      setFiles([]);
-      // Responses will come via WebSocket, isLoading remains true until merged_response
-
-    } catch (error: any) {
-      console.error('Network or unexpected error submitting prompt:', error);
-      setMergedResponse({
-          content: `Network or unexpected error: ${error.message}`,
-          agent_id: 'error',
-          error: error.message
-      });
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    // This is the root div of the ChatInterface component.
-    // It needs to be a flex column and fill the height of its parent.
-    // Its direct children will be the scrollable message area and the fixed input area.
-    <div className="flex-1 flex flex-col h-full aetherpro-card"> {/* Added h-full and aetherpro-card here */}
-      {/* Scrollable Messages Area */}
-      {/* This div contains ResponseTabs and is responsible for its own scrolling */}
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar"> {/* ADDED custom-scrollbar here */}
-        <ResponseTabs
-          responses={responses}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          availableAgents={availableAgents}
-          mergedContent={mergedResponse}
-        />
-      </div>
-
-      {/* Sticky Message Input Area */}
-      {/* This div should NOT have overflow-y-auto or flex-1, as it's pinned. */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-background z-10"> {/* Added bg-background and z-10 */}
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-4">
-            <FileUploadZone
-              files={files}
-              setFiles={setFiles}
-              isDragOver={isDragOver}
-              setIsDragOver={setIsDragOver}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={`Send a message to ${selectedAgent.name}...`}
-                className="aetherpro-input w-full p-4 pr-12 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                rows={4}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    handleSubmit(e);
-                  }
-                }}
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={isLoading || (!prompt.trim() && files.length === 0)}
-                className="absolute bottom-3 right-3 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isLoading ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <Send className="w-4 h-4" />}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-              <span>
-                Press {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + Enter to send
-              </span>
-              <span>
-                {prompt.length} characters
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Main Console Component ---
+// --- Enhanced Main Console Component ---
 const ConsolePage = () => {
   const { user } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent>({ id: 'merged', name: 'Merged View', status: 'online' });
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
 
   // States for chat interface
   const [currentSessionId, setCurrentSessionId] = useState(() => uuidv4());
@@ -716,16 +673,226 @@ const ConsolePage = () => {
   const [responses, setResponses] = useState<Record<string, LLMResponse>>({});
   const [mergedResponse, setMergedResponse] = useState<LLMResponse | null>(null);
   const [prompt, setPrompt] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch available agents/modules using API service
+  const websocket = useRef<WebSocket | null>(null);
+  const currentRequestIdRef = useRef<string | null>(null);
+  const responsesRef = useRef<Record<string, LLMResponse>>({});
+  
+  // FIX: Use a ref to hold the data for the turn being processed.
+  // This avoids stale closures and prevents the WebSocket from reconnecting on every input change.
+  const submissionDataRef = useRef<{ prompt: string; files: File[]; selectedAgent: Agent } | null>(null);
+
+  // Load conversations on mount
+  useEffect(() => {
+    const loadConversations = async () => {
+      try {
+        const convs = await conversationAPI.getConversations();
+        setConversations(convs);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      }
+    };
+    loadConversations();
+  }, []);
+
+  // Save conversation function
+  const saveCurrentConversation = useCallback(async () => {
+    if (!currentConversation) return;
+
+    try {
+      await conversationAPI.saveConversation(currentConversation);
+      // Update conversations list
+      setConversations(prev => {
+        const existingIndex = prev.findIndex(c => c.id === currentConversation.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = currentConversation;
+          return updated;
+        } else {
+          return [currentConversation, ...prev];
+        }
+      });
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  }, [currentConversation]);
+
+  // Add turn to current conversation
+  const addTurnToConversation = useCallback((
+    turnPrompt: string,
+    turnFiles: File[],
+    turnResponses: Record<string, LLMResponse>,
+    turnMergedResponse: LLMResponse | null,
+    turnSelectedAgent: Agent
+  ) => {
+    const turn: ChatTurn = {
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      prompt: turnPrompt,
+      files: turnFiles.map(f => ({
+        filename: f.name,
+        size: f.size,
+        content_type: f.type
+      })),
+      responses: turnResponses,
+      mergedResponse: turnMergedResponse,
+      selectedAgent: turnSelectedAgent
+    };
+
+    setCurrentConversation(prev => {
+      if (!prev) {
+        // Create new conversation
+        const newConversation: Conversation = {
+          id: currentSessionId,
+          title: generateConversationTitle(turnPrompt),
+          timestamp: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+          agent: turnSelectedAgent.name,
+          turns: [turn],
+          userId: user?.id
+        };
+        return newConversation;
+      } else {
+        // Add turn to existing conversation
+        const updated = {
+          ...prev,
+          turns: [...prev.turns, turn],
+          lastUpdated: new Date().toISOString()
+        };
+        return updated;
+      }
+    });
+  }, [currentSessionId, user?.id]);
+
+  // Keep refs updated for access inside callbacks
+  useEffect(() => { currentRequestIdRef.current = currentRequestId; }, [currentRequestId]);
+  useEffect(() => { responsesRef.current = responses; }, [responses]);
+  
+  // Auto-save conversation when it changes
+  useEffect(() => {
+    if (currentConversation && currentConversation.turns.length > 0) {
+      const timeoutId = setTimeout(() => {
+        saveCurrentConversation();
+      }, 1000); // Save after 1 second of inactivity
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentConversation, saveCurrentConversation]);
+
+  // WebSocket connection setup
+  useEffect(() => {
+    console.log('=== WEBSOCKET EFFECT RUNNING ===');
+    console.log('🔌 Tying WebSocket to session ID:', currentSessionId);
+    
+    if (websocket.current) {
+      console.log('🔌 Closing existing WebSocket');
+      websocket.current.close();
+    }
+
+    if (!currentSessionId) {
+      console.warn("❌ No currentSessionId, WebSocket connection paused.");
+      return;
+    }
+
+    console.log('🔌 Creating new WebSocket connection...');
+    websocket.current = createWebSocketConnection(
+      currentSessionId,
+      (message: WebSocketMessage) => {
+        console.log('📨 WS Message received:', message);
+        console.log('   Current Request ID:', currentRequestIdRef.current);
+        console.log('   Message Request ID:', message.request_id);
+
+        if (message.request_id !== currentRequestIdRef.current) {
+            console.log('📨 Ignoring message for a different request.');
+            return;
+        }
+
+        if (message.type === 'individual_response') {
+          console.log('📨 Processing individual response from:', message.agent_id);
+          setResponses((prev) => ({
+            ...prev,
+            [message.agent_id as string]: {
+              content: (message as IndividualResponseMessage).content,
+              version: (message as IndividualResponseMessage).version,
+              tools: (message as IndividualResponseMessage).tools,
+              error: message.error
+            }
+          }));
+        } else if (message.type === 'merged_response') {
+          console.log('📨 Processing merged response');
+          const mergedResp: LLMResponse = {
+              content: (message as MergedResponseMessage).content,
+              agent_id: 'merged',
+              reasoning: (message as MergedResponseMessage).reasoning,
+              error: message.error,
+          };
+          setMergedResponse(mergedResp);
+          setIsLoading(false);
+          
+          console.log('📨 Merged response complete. Adding turn to conversation...');
+          
+          // FIX: Use the data captured at submission time from the ref
+          if (submissionDataRef.current) {
+            addTurnToConversation(
+              submissionDataRef.current.prompt,
+              submissionDataRef.current.files,
+              responsesRef.current,
+              mergedResp,
+              submissionDataRef.current.selectedAgent
+            );
+            submissionDataRef.current = null; // Clear the ref after use
+          } else {
+            console.warn("⚠️ Could not find submission data to create conversation turn.");
+          }
+
+        } else if (message.type === 'system_error') {
+          console.error('❌ System Error from Backend:', message.error, message.details);
+          const errorResponse: LLMResponse = {
+            content: `A system error occurred: ${message.error || 'Unknown error'}`,
+            agent_id: 'system_error',
+            error: message.error,
+            reasoning: JSON.stringify(message.details || {})
+          };
+          setMergedResponse(errorResponse);
+          setIsLoading(false);
+          
+          if (submissionDataRef.current) {
+            addTurnToConversation(
+              submissionDataRef.current.prompt,
+              submissionDataRef.current.files,
+              responsesRef.current,
+              errorResponse,
+              submissionDataRef.current.selectedAgent
+            );
+            submissionDataRef.current = null;
+          }
+        }
+      },
+      (error: Event) => console.error('❌ WebSocket error:', error),
+      (event: CloseEvent) => console.log('🔌 WebSocket closed:', event.code, event.reason)
+    );
+
+    return () => {
+      if (websocket.current) {
+        console.log('🔌 Cleaning up WebSocket connection for session', currentSessionId);
+        websocket.current.close();
+        websocket.current = null;
+      }
+    };
+  // FIX: The dependency array is now stable and will only run when the chat session changes.
+  }, [currentSessionId, addTurnToConversation]);
+
+  // Fetch available agents/modules
   useEffect(() => {
     const fetchAgents = async () => {
       try {
         const modules = await getModules();
         
-        // Filter for modules that act as LLM agents and are running
         const agents: Agent[] = modules
-          .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner') || m.id.includes('structured_content_agent'))) // Added structured_content_agent
+          .filter((m: any) => m.state === 'RUNNING' && (m.id.includes('agent') || m.id.includes('llm') || m.id === 'orchestrator' || m.id.includes('planner') || m.id.includes('structured_content_agent')))
           .map((m: any) => ({
             id: m.id,
             name: m.name,
@@ -739,7 +906,6 @@ const ConsolePage = () => {
             version: m.version
           }));
 
-        // Add merged view option
         const mergedOption: Agent = { 
           id: 'merged', 
           name: 'Merged View', 
@@ -748,10 +914,11 @@ const ConsolePage = () => {
         };
         
         setAvailableAgents([mergedOption, ...agents]);
-        setSelectedAgent(mergedOption);
+        if (!availableAgents.some(a => a.id === selectedAgent.id)) {
+            setSelectedAgent(mergedOption);
+        }
       } catch (error) {
         console.error('Error fetching modules:', error);
-        // Set fallback agents if API call fails
         const fallbackAgents: Agent[] = [
           { id: 'merged', name: 'Merged View', status: 'online', description: 'Orchestrates responses across all active agents.' },
           { id: 'dummy_agent', name: 'Demo Agent', status: 'online', provider: 'AetherPro' }
@@ -762,11 +929,11 @@ const ConsolePage = () => {
     };
     
     fetchAgents();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
-    // Update the document class for global dark mode
     if (darkMode) {
       document.documentElement.classList.remove('dark');
     } else {
@@ -776,20 +943,113 @@ const ConsolePage = () => {
 
   const handleNewChat = () => {
     console.log('Starting new chat...');
-    setCurrentSessionId(uuidv4());
+    const newSessionId = uuidv4();
+    setCurrentSessionId(newSessionId);
+    setCurrentConversation(null);
     setCurrentRequestId(null);
     setResponses({});
     setMergedResponse(null);
     setPrompt('');
+    setFiles([]);
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
-    console.log('Selected conversation:', conversation);
+    console.log('Selected conversation:', conversation.id);
+    if (currentSessionId === conversation.id) return;
+
     setCurrentSessionId(conversation.id);
+    setCurrentConversation(conversation);
+    // Reset volatile state for the new conversation view
     setCurrentRequestId(null);
     setResponses({});
     setMergedResponse(null);
     setPrompt('');
+    setFiles([]);
+    setIsLoading(false);
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      await conversationAPI.deleteConversation(conversationId);
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      if (currentConversation?.id === conversationId) {
+        handleNewChat();
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+    }
+  };
+
+  const handleRenameConversation = async (conversationId: string, newTitle: string) => {
+    try {
+      await conversationAPI.updateConversationTitle(conversationId, newTitle);
+      setConversations(prev => 
+        prev.map(c => 
+          c.id === conversationId 
+            ? { ...c, title: newTitle, lastUpdated: new Date().toISOString() }
+            : c
+        )
+      );
+      
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(prev => 
+          prev ? { ...prev, title: newTitle, lastUpdated: new Date().toISOString() } : null
+        );
+      }
+    } catch (error) {
+      console.error('Error renaming conversation:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isLoading || (!prompt.trim() && files.length === 0)) return;
+
+    console.log('=== SUBMIT PROMPT START ===');
+    
+    setIsLoading(true);
+    setResponses({});
+    setMergedResponse(null);
+    const newRequestId = uuidv4();
+    setCurrentRequestId(newRequestId);
+
+    // FIX: Capture submission data in the ref
+    submissionDataRef.current = { prompt, files, selectedAgent };
+
+    console.log('🎯 Submitting with Request ID:', newRequestId);
+
+    try {
+      const uploadedFilePaths: { filename: string; temp_path: string; size: number; content_type: string }[] = [];
+      for (const file of files) {
+          const data = await uploadFile(file);
+          uploadedFilePaths.push(data);
+      }
+
+      const selectedAgents = selectedAgent.id !== 'merged' ? [selectedAgent.id] : null;
+
+      await submitPrompt(
+        prompt,
+        currentSessionId,      
+        newRequestId,
+        selectedAgents,
+        uploadedFilePaths
+      );
+
+      console.log('✅ Prompt submitted successfully.');
+      setPrompt('');
+      setFiles([]);
+
+    } catch (error: any) {
+      console.error('❌ Error submitting prompt:', error);
+      setMergedResponse({
+        content: `Error during submission: ${error.message}`,
+        error: error.message
+      });
+      setIsLoading(false);
+    }
+    
+    console.log('=== SUBMIT PROMPT END ===');
   };
 
   // Set initial dark mode class
@@ -797,14 +1057,10 @@ const ConsolePage = () => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
     }
-    // No need for theme-transition class application here, it's a CSS class defined in index.css
-    // Toggling the 'dark' class on `html` or `body` will automatically trigger the CSS transition.
-  }, [darkMode]); // Dependency on darkMode ensures it runs on toggle
-
+  }, [darkMode]);
 
   return (
-    <div className={`${darkMode ? 'dark' : ''} h-screen flex flex-col`}> {/* Set flex-col here */}
-      {/* Header takes fixed height */}
+    <div className={`${darkMode ? 'dark' : ''} h-screen flex flex-col bg-white dark:bg-gray-900`}>
       <Header
         darkMode={darkMode}
         toggleDarkMode={toggleDarkMode}
@@ -813,30 +1069,82 @@ const ConsolePage = () => {
         availableAgents={availableAgents}
       />
 
-      {/* Main content area: flex-1 to take remaining height, flex container */}
-      <div className="flex-1 flex overflow-hidden"> {/* overflow-hidden on this flex-1 parent */}
-        {/* Sidebar takes fixed width */}
+      <div className="flex-1 flex overflow-hidden">
         <Sidebar
           conversations={conversations}
           onNewChat={handleNewChat}
           onSelectConversation={handleSelectConversation}
+          currentConversationId={currentConversation?.id || ''}
+          onDeleteConversation={handleDeleteConversation}
+          onRenameConversation={handleRenameConversation}
         />
 
-        {/* Chat Interface: flex-1 to take remaining width, flex-col for its own content */}
-        <div className="flex-1 flex flex-col overflow-hidden"> {/* overflow-hidden here */}
-          <ChatInterface
-            selectedAgent={selectedAgent}
-            availableAgents={availableAgents}
-            currentSessionId={currentSessionId}
-            currentRequestId={currentRequestId}
-            setCurrentRequestId={setCurrentRequestId}
-            responses={responses}
-            setResponses={setResponses}
-            mergedResponse={mergedResponse}
-            setMergedResponse={setMergedResponse}
-            prompt={prompt}
-            setPrompt={setPrompt}
-          />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {currentConversation && currentConversation.turns.length > 0 ? (
+              <ChatHistory conversation={currentConversation} availableAgents={availableAgents} />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">Welcome to AetherPro Console</p>
+                  <p className="text-sm">Start a conversation or select from your history.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-900">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-4">
+                <FileUploadZone
+                  files={files}
+                  setFiles={setFiles}
+                  isDragOver={isDragOver}
+                  setIsDragOver={setIsDragOver}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={`Send a message to ${selectedAgent.name}...`}
+                    className="aetherpro-input w-full p-4 pr-12 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-gray-50 dark:bg-gray-800"
+                    rows={4}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        handleSubmit(e);
+                      }
+                    }}
+                    disabled={isLoading}
+                  />
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || (!prompt.trim() && files.length === 0)}
+                    className="absolute bottom-3 right-3 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Send message"
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                  <span>
+                    Press {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + Enter to send
+                  </span>
+                  <span>
+                    {prompt.length} characters
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

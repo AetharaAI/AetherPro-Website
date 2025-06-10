@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.tsx - Enhanced Authentication Context with Debug Logging
+// src/contexts/AuthContext.tsx - Authentication Context
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { API_BASE_URL } from '../config'; 
@@ -45,69 +45,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Use a ref to ensure initialCheckDone doesn't cause re-renders
   const initialCheckDone = useRef(false);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 Auth State Debug:', {
-      user: user ? { id: user.id, email: user.email, name: user.name } : null,
-      token: token ? `${token.substring(0, 20)}...` : null,
-      isAuthenticated,
-      loading,
-      initialCheckDone: initialCheckDone.current
-    });
-  }, [user, token, isAuthenticated, loading]);
-
   // Function to save token and user info consistently
   const saveAuthData = useCallback((jwtToken: string, userData: User) => {
-    console.log('💾 Saving auth data:', { 
-      token: `${jwtToken.substring(0, 20)}...`, 
-      user: { id: userData.id, email: userData.email, name: userData.name } 
-    });
-    
     localStorage.setItem('jwt_token', jwtToken);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(jwtToken);
     setUser(userData);
-    
-    console.log('✅ Auth data saved successfully');
   }, []);
 
   // Function to clear auth data
   const clearAuthData = useCallback(() => {
-    console.log('🗑️ Clearing auth data');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-    console.log('✅ Auth data cleared');
   }, []);
 
   // Initial authentication check on component mount
   useEffect(() => {
     // Prevent running twice in StrictMode or on hot reloads
     if (initialCheckDone.current) {
-        console.log('⏭️ Skipping initial auth check - already completed');
         setLoading(false);
         return; 
     }
 
     const checkAuthState = async () => {
-      console.log('🔄 Starting initial auth check...');
       setLoading(true); // Ensure loading is true at the start of check
       try {
         const storedToken = localStorage.getItem('jwt_token');
         const storedUser = localStorage.getItem('user');
 
-        console.log('📱 Stored auth data:', { 
-          hasToken: !!storedToken, 
-          hasUser: !!storedUser,
-          tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : null
-        });
-
         if (storedToken && storedUser) {
           try {
             const parsedUser: User = JSON.parse(storedUser);
-            console.log('🔍 Validating stored token with backend...');
-            
             // Validate token with backend to ensure it's still valid
             const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
               method: 'GET',
@@ -119,26 +89,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             if (response.ok) {
               const userData = await response.json();
-              console.log('✅ Token validation successful, user authenticated');
               saveAuthData(storedToken, userData); // Re-save to refresh data/token expiry
             } else {
-              console.warn('❌ Stored token invalid or expired. Status:', response.status);
+              console.warn('Stored token invalid or expired. Logging out.');
               clearAuthData();
             }
           } catch (e) {
-            console.error("❌ Failed to parse stored user data or verify token:", e);
+            console.error("Failed to parse stored user data or verify token:", e);
             clearAuthData(); // Clear corrupted data
           }
-        } else {
-          console.log('ℹ️ No stored auth data found');
         }
       } catch (error) {
-        console.error('❌ Initial auth check failed:', error);
+        console.error('Initial auth check failed:', error);
         clearAuthData();
       } finally {
         setLoading(false); // Authentication check is complete
         initialCheckDone.current = true; // Mark initial check as done
-        console.log('✅ Initial auth check completed');
       }
     };
 
@@ -146,7 +112,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [saveAuthData, clearAuthData]); 
 
   const login = async (email: string, password: string) => {
-    console.log('🔑 Starting login process for:', email);
     setLoading(true); // Set loading for login operation
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -155,27 +120,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ email, password })
       });
       const data = await response.json();
-      
-      console.log('📡 Login response status:', response.status);
-      
       if (!response.ok) {
-        console.error('❌ Login failed:', data.detail);
         throw new Error(data.detail || 'Login failed');
       }
-      
-      console.log('✅ Login successful, saving auth data...');
       saveAuthData(data.token, data.user);
-    } catch (error) {
-      console.error('❌ Login error:', error);
-      throw error;
     } finally {
       setLoading(false); // Reset loading after login operation
-      console.log('🏁 Login process completed');
     }
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    console.log('📝 Starting signup process for:', email);
     setLoading(true); // Set loading for signup operation
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
@@ -184,40 +138,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ name, email, password })
       });
       const data = await response.json();
-      
-      console.log('📡 Signup response status:', response.status);
-      
       if (!response.ok) {
-        console.error('❌ Signup failed:', data.detail);
         throw new Error(data.detail || 'Signup failed');
       }
-      
-      console.log('✅ Signup successful, saving auth data...');
       saveAuthData(data.token, data.user);
-    } catch (error) {
-      console.error('❌ Signup error:', error);
-      throw error;
     } finally {
       setLoading(false); // Reset loading after signup operation
-      console.log('🏁 Signup process completed');
     }
   };
 
   const logout = () => { 
-    console.log('👋 Logging out user');
     // No setLoading(true) here as it's a local clear and typically fast
     clearAuthData();
   };
 
   const authCallback = useCallback(async (jwtToken: string) => {
-    console.log('🔄 Starting OAuth callback process');
     setLoading(true); // Set loading for auth callback operation
     try {
       if (!jwtToken) {
         throw new Error("No JWT token provided for authentication callback.");
       }
-      
-      console.log('🔍 Verifying OAuth token with backend...');
       // Verify the token by calling /api/auth/me
       const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
@@ -227,22 +167,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
       const data = await response.json();
-      
-      console.log('📡 OAuth verification response status:', response.status);
-      
       if (!response.ok) {
-        console.error('❌ OAuth token verification failed:', data.detail);
         throw new Error(data.detail || 'Failed to verify OAuth token.');
       }
-      
-      console.log('✅ OAuth verification successful, saving auth data...');
       saveAuthData(jwtToken, data);
-    } catch (error) {
-      console.error('❌ OAuth callback error:', error);
-      throw error;
     } finally {
       setLoading(false); // Reset loading after auth callback operation
-      console.log('🏁 OAuth callback process completed');
     }
   }, [saveAuthData]);
 

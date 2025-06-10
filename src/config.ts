@@ -1,10 +1,10 @@
 // config.ts
 
 interface ImportMetaEnv {
-  VITE_APP_API_BASE_URL?: string;
-  VITE_APP_FRONTEND_BASE_URL?: string;
-  VITE_APP_GOOGLE_CLIENT_ID?: string;
-  VITE_APP_GOOGLE_CLIENT_SECRET?: string;
+  VITE_API_BASE_URL?: string;
+  VITE_FRONTEND_BASE_URL?: string;
+  VITE_GOOGLE_CLIENT_ID?: string;
+  VITE_GOOGLE_CLIENT_SECRET?: string;
   // add other env variables here as needed
 }
 

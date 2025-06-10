@@ -1,8 +1,8 @@
 // src/pages/AuthCallbackPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useAuth } from 'src/contexts/AuthContext';
+import LoadingSpinner from 'src/components/LoadingSpinner';
 import { AlertCircle } from 'lucide-react';
 import { FRONTEND_BASE_URL } from '../config'; // Use FRONTEND_BASE_URL for redirect if error
 

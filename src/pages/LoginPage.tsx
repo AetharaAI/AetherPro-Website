@@ -1,10 +1,10 @@
-// src/pages/LoginPage.tsx - Login Page
+// src/pages/LoginPage.tsx - Debug Version with Enhanced Logging
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { API_BASE_URL } from '../config'; // Import API_BASE_URL from your config
+import { API_BASE_URL } from '../config';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -20,29 +20,43 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔑 Login form submitted with:', { email: formData.email, passwordLength: formData.password.length });
+    console.log('🌐 API_BASE_URL:', API_BASE_URL);
+    
     setLoading(true);
     setError('');
 
     try {
+      console.log('📡 Calling login function...');
       await login(formData.email, formData.password);
-      navigate('/console');
+      console.log('✅ Login function completed successfully');
+      
+      // Add a small delay to ensure auth state is updated
+      setTimeout(() => {
+        console.log('🧭 Navigating to /console...');
+        navigate('/console');
+      }, 100);
+      
     } catch (err: any) {
+      console.error('❌ Login error caught:', err);
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
+      console.log('🏁 Login process completed (finally block)');
     }
   };
    
   const handleOAuthLogin = (provider: 'google' | 'github') => {
+    console.log(`🔄 Starting OAuth login with ${provider}`);
     setLoading(true);
     setError('');
 
-    if (provider === 'google') {
-      // Use API_BASE_URL from your config.ts
-      window.location.href = `${API_BASE_URL}/api/auth/google`; 
-    } else if (provider === 'github') {
-      window.location.href = `${API_BASE_URL}/api/auth/github`; 
-    }
+    const oauthUrl = provider === 'google' 
+      ? `${API_BASE_URL}/api/auth/google`
+      : `${API_BASE_URL}/api/auth/github`;
+    
+    console.log(`🌐 Redirecting to OAuth URL: ${oauthUrl}`);
+    window.location.href = oauthUrl;
   };
 
   return (
@@ -70,6 +84,20 @@ const LoginPage = () => {
                   <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
                   <div className="ml-3">
                     <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Debug Info - Remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="text-sm">
+                  <div className="font-bold text-blue-700 dark:text-blue-300 mb-2">🔍 Debug Info:</div>
+                  <div className="space-y-1 text-blue-600 dark:text-blue-400">
+                    <div>API Base URL: {API_BASE_URL}</div>
+                    <div>Form Data: {JSON.stringify({ email: formData.email, hasPassword: !!formData.password })}</div>
+                    <div>Loading: {loading ? 'Yes' : 'No'}</div>
                   </div>
                 </div>
               </div>

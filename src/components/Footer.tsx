@@ -1,4 +1,4 @@
-// components/Footer.tsx - Footer Component
+// components/Footer.tsx - Updated with Logo and Correct Links
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -8,10 +8,11 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"></div>
+            {/* CHANGED: Added logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <img className="h-8 w-auto" src="/aether-logo.png" alt="AetherPro Logo" />
               <span className="text-xl font-bold text-gray-900 dark:text-white">AetherPro</span>
-            </div>
+            </Link>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
               The next-generation AI orchestration platform for developers and enterprises.
             </p>
@@ -33,9 +34,10 @@ const Footer = () => {
               Company
             </h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">About</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Blog</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Careers</a></li>
+              {/* CHANGED: Updated links */}
+              <li><Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">About</Link></li>
+              <li><Link to="/blog" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Blog</Link></li>
+              <li><Link to="/careers" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Careers</Link></li>
             </ul>
           </div>
 
@@ -44,9 +46,10 @@ const Footer = () => {
               Legal
             </h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Privacy</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Terms</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Security</a></li>
+              {/* CHANGED: Updated links */}
+              <li><Link to="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Privacy</Link></li>
+              <li><Link to="/terms" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Terms</Link></li>
+              <li><Link to="/security" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Security</Link></li>
             </ul>
           </div>
         </div>
