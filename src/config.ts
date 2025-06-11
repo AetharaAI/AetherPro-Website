@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   VITE_FRONTEND_BASE_URL?: string;
   VITE_GOOGLE_CLIENT_ID?: string;
   VITE_GOOGLE_CLIENT_SECRET?: string;
+  VITE_GOOGLE_REDiRECT_URI?: string;
   // add other env variables here as needed
 }
 
@@ -18,7 +19,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.ae
 export const FRONTEND_BASE_URL = import.meta.env.VITE_FRONTEND_BASE_URL || 'https:/www.aetherprotech.com';
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_APP_GOOGLE_CLIENT_ID || '865938245821-k3457n4ns5nt9sokue0sl6484vfrb8kf.apps.googleusercontent.com';
 export const GOOGLE_CLIENT_SECRET = import.meta.env.VITE_APP_GOOGLE_CLIENT_SECRET || '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';
-export const GOOGLE_REDIRECT_URI = `https://www.aetherprotech/api/auth/google/callback`;
+export const GOOGLE_REDIRECT_URI = `https://www.aetherprotech.com/api/auth/google/callback`;
 
 // For production, these would be `https://api.aetherprotech.com` and `https://aetherprotech.com`.
 
