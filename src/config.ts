@@ -13,9 +13,9 @@ interface ImportMeta {
 }
 // src/config.ts
 //export const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-export const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://15.204.235.6:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://15.204.235.6:8000';
 // You might also have a frontend base URL here if needed, e.g., for self-redirects
-export const FRONTEND_BASE_URL = import.meta.env.VITE_APP_FRONTEND_BASE_URL || 'https://aetherprotech.com';
+export const FRONTEND_BASE_URL = import.meta.env.VITE_FRONTEND_BASE_URL || 'https://www.aetherprotech.com';
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_APP_GOOGLE_CLIENT_ID || '865938245821-k3457n4ns5nt9sokue0sl6484vfrb8kf.apps.googleusercontent.com';
 export const GOOGLE_CLIENT_SECRET = import.meta.env.VITE_APP_GOOGLE_CLIENT_SECRET || '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';
 
