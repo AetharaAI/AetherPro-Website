@@ -801,6 +801,11 @@ const ConsolePage = () => {
     websocket.current = createWebSocketConnection(
       currentSessionId,
       (message: WebSocketMessage) => {
+        if (message.type === 'ping') {
+          console.log('📨 Ping received, sending pong...');
+          websocket.current?.send(JSON.stringify({ type: 'pong', currentSessionId }));
+          return;
+        }
         console.log('📨 WS Message received:', message);
         console.log('   Current Request ID:', currentRequestIdRef.current);
         console.log('   Message Request ID:', message.request_id);
@@ -874,7 +879,6 @@ const ConsolePage = () => {
       (error: Event) => console.error('❌ WebSocket error:', error),
       (event: CloseEvent) => console.log('🔌 WebSocket closed:', event.code, event.reason)
     );
-
     return () => {
       if (websocket.current) {
         console.log('🔌 Cleaning up WebSocket connection for session', currentSessionId);

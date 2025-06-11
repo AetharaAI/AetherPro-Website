@@ -1,0 +1,32 @@
+# robots.txt for aetherprotech.com
+
+# Give access to all friendly crawlers
+User-agent: *
+
+# Allow crawlers to access the main informational pages
+Allow: /
+Allow: /docs
+Allow: /pricing
+Allow: /about
+Allow: /blog
+Allow: /privacy
+Allow: /terms
+Allow: /security
+Allow: /careers
+
+# Disallow crawlers from accessing functional/private app routes
+Disallow: /login
+Disallow: /signup
+Disallow: /console
+Disallow: /dashboard
+Disallow: /account/
+Disallow: /auth/
+
+# Disallow crawling of the API itself (the API is not for indexing)
+# This is a good practice, though most crawlers won't hit a different subdomain
+# unless explicitly linked.
+User-agent: *
+Disallow: /api/
+
+# Point to your sitemap (good for SEO)
+Sitemap: https://www.aetherprotech.com/sitemap.xml
