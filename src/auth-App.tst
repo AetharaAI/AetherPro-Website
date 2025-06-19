@@ -1,3 +1,5 @@
+// App.tsx - Updated with all new routes
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -15,47 +17,23 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Temporary debug component - remove in production
-const AuthDebug: React.FC = () => {
-  const { user, token, isAuthenticated, loading } = useAuth();
+// ADDED: Import the new pages
+import SettingsPage from './pages/SettingsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import SecurityPage from './pages/SecurityPage';
+import CareersPage from './pages/CareersPage';
 
-  // Only show in development
-  if (process.env.NODE_ENV !== 'development') {
-    return null;
-  }
-
-  return (
-    <div className="fixed bottom-4 right-4 bg-black bg-opacity-80 text-white p-3 rounded-lg text-xs font-mono max-w-sm z-50">
-      <div className="mb-2 font-bold text-yellow-400">🔍 Auth Debug</div>
-      <div className="space-y-1">
-        <div>
-          <span className="text-blue-300">Loading:</span> {loading ? '✅ True' : '❌ False'}
-        </div>
-        <div>
-          <span className="text-blue-300">Authenticated:</span> {isAuthenticated ? '✅ True' : '❌ False'}
-        </div>
-        <div>
-          <span className="text-blue-300">Token:</span> {token ? `${token.substring(0, 15)}...` : '❌ None'}
-        </div>
-        <div>
-          <span className="text-blue-300">User:</span> {user ? `${user.name} (${user.email})` : '❌ None'}
-        </div>
-        <div>
-          <span className="text-blue-300">LocalStorage Token:</span> {localStorage.getItem('jwt_token') ? '✅ Present' : '❌ Missing'}
-        </div>
-        <div>
-          <span className="text-blue-300">LocalStorage User:</span> {localStorage.getItem('user') ? '✅ Present' : '❌ Missing'}
-        </div>
-      </div>
-    </div>
-  );
-};
+// You can create simple placeholder pages for About and Blog
+const PlaceholderPage = ({ title }: { title: string }) => (
+  <div className="text-center py-20">
+    <h1 className="text-4xl font-bold dark:text-white">{title}</h1>
+    <p className="text-gray-500 mt-4">This page is under construction.</p>
+  </div>
+);
 
 function App() {
-  const { user, isAuthenticated, loading } = useAuth();
-
-  // Debug logging - remove in production
-  console.log('🔍 App Auth State:', { user: !!user, isAuthenticated, loading });
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -73,9 +51,18 @@ function App() {
       <Navbar />
       <main className="flex-1">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/security" element={<SecurityPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/about" element={<PlaceholderPage title="About Us" />} />
+          <Route path="/blog" element={<PlaceholderPage title="Blog" />} />
+
+          {/* Auth Routes */}
           <Route 
             path="/login" 
             element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
@@ -88,36 +75,28 @@ function App() {
             path="/auth/callback" 
             element={<AuthCallbackPage />} 
           />
+
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
+            element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
           />
           <Route
             path="/account/api-keys"
-            element={
-              <ProtectedRoute>
-                <ApiKeysPage />
-              </ProtectedRoute>
-            }
+            element={<ProtectedRoute><ApiKeysPage /></ProtectedRoute>}
           />
           <Route
             path="/console"
-            element={
-              <ProtectedRoute>
-                <ConsolePage />
-              </ProtectedRoute>
-            }
+            element={<ProtectedRoute><ConsolePage /></ProtectedRoute>}
+          />
+          {/* ADDED: Settings page route */}
+          <Route
+            path="/account/settings"
+            element={<ProtectedRoute><SettingsPage /></ProtectedRoute>}
           />
         </Routes>
       </main>
       <Footer />
-      
-      {/* Temporary debug component - remove in production */}
-      <AuthDebug />
     </div>
   );
 }

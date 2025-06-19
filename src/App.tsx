@@ -1,4 +1,4 @@
-// App.tsx - Updated with all new routes
+// App.tsx - Updated without OAuth routes
 
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -13,18 +13,17 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import ConsolePage from './pages/ConsolePage';
-import AuthCallbackPage from './pages/AuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// ADDED: Import the new pages
+// Import the new pages
 import SettingsPage from './pages/SettingsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import SecurityPage from './pages/SecurityPage';
 import CareersPage from './pages/CareersPage';
 
-// You can create simple placeholder pages for About and Blog
+// Placeholder pages for About and Blog
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="text-center py-20">
     <h1 className="text-4xl font-bold dark:text-white">{title}</h1>
@@ -71,10 +70,6 @@ function App() {
             path="/signup" 
             element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignupPage />} 
           />
-          <Route 
-            path="/auth/callback" 
-            element={<AuthCallbackPage />} 
-          />
 
           {/* Protected Routes */}
           <Route
@@ -89,7 +84,6 @@ function App() {
             path="/console"
             element={<ProtectedRoute><ConsolePage /></ProtectedRoute>}
           />
-          {/* ADDED: Settings page route */}
           <Route
             path="/account/settings"
             element={<ProtectedRoute><SettingsPage /></ProtectedRoute>}
