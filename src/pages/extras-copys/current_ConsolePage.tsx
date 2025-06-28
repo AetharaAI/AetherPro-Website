@@ -8,7 +8,6 @@ import {
   FileText, Code, Image, Archive, Copy
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-
 import { useNavigate } from 'react-router-dom';
 
 // Component imports
@@ -23,8 +22,7 @@ import {
   createWebSocketConnection,
   WebSocketMessage,
   IndividualResponseMessage,
-  MergedResponseMessage,
-  ThinkingStatusMessage
+  MergedResponseMessage
 } from '../services/api';
 
 // --- TYPE DEFINITIONS ---
@@ -60,7 +58,7 @@ const conversationAPI = {
   getConversations: async (): Promise<Conversation[]> => {
     try {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch('https://api.aetherprotech.com/api/conversations', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+      const response = await fetch('/api/conversations', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
       if (!response.ok) throw new Error('Failed to fetch conversations');
       return await response.json();
     } catch (error) {
@@ -72,7 +70,7 @@ const conversationAPI = {
   saveConversation: async (conversation: Conversation): Promise<void> => {
     try {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch('https://api.aetherprotech.com/api/conversations', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(conversation) });
+      const response = await fetch('/api/conversations', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(conversation) });
       if (!response.ok) throw new Error('Failed to save conversation');
     } catch (error) {
       console.error('Error saving conversation:', error);
@@ -86,7 +84,7 @@ const conversationAPI = {
   deleteConversation: async (conversationId: string): Promise<void> => {
     try {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`https://api.aetherprotech.com/api/conversations/${conversationId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+      const response = await fetch(`/api/conversations/${conversationId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
       if (!response.ok) throw new Error('Failed to delete conversation');
     } catch (error) {
       console.error('Error deleting conversation:', error);
@@ -99,7 +97,7 @@ const conversationAPI = {
   updateConversationTitle: async (conversationId: string, title: string): Promise<void> => {
     try {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`https://api.aetherprotech.com/api/conversations/${conversationId}/title`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) });
+      const response = await fetch(`/api/conversations/${conversationId}/title`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) });
       if (!response.ok) throw new Error('Failed to update conversation title');
     } catch (error) {
       console.error('Error updating conversation title:', error);
@@ -226,7 +224,6 @@ const ConsolePage = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isWebcamOpen, setIsWebcamOpen] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
 
@@ -234,7 +231,7 @@ const ConsolePage = () => {
   const currentRequestIdRef = useRef<string | null>(null);
   const responsesRef = useRef<Record<string, LLMResponse>>({});
   const submissionDataRef = useRef<{ prompt: string; files: File[]; selectedAgent: Agent } | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+
   const availableTools: Tool[] = [
     { id: 'camera', name: 'Camera', icon: Camera, description: 'Capture images from your camera', action: () => setIsWebcamOpen(true) },
     { id: 'microphone', name: 'Microphone', icon: Mic, description: 'Record audio messages', action: () => setIsAudioModalOpen(true) },
@@ -265,47 +262,16 @@ const ConsolePage = () => {
   useEffect(() => {
     if (websocket.current) websocket.current.close();
     if (!currentSessionId) return;
-
     websocket.current = createWebSocketConnection(currentSessionId, (message) => {
-      console.log(' 📬 Websocket message received:', message.type, message);
-
       if (message.type === 'ping') {
         console.log('📨 Ping received, sending pong...');
         websocket.current?.send(JSON.stringify({ type: 'pong', currentSessionId}));
         return;
       }
-      // if (message.request_id !== currentRequestIdRef.current) return; {
-
-      
-      if (message.type === 'thinking_status') {
-        const msg = message as ThinkingStatusMessage;
-        console.log('🧠 Thinking status received:', msg.data.description);
-        setStatusMessage(msg.data.description);
-        return;
-      }
-      if (message.request_id !== currentRequestIdRef.current) {
-        console.warn('⚠️ Ignoring message request:', message.request_id, 'vs', currentRequestIdRef.current);
-        return;
-      }
-      if (message.type === 'individual_response') {
-        const msg = message as IndividualResponseMessage;
-        console.log('💬 Individual response received:', msg.agent_id,); 
-        setStatusMessage(null); 
-        setResponses(p => ({ ...p, [msg.agent_id]: { content: msg.content, error: msg.error } })); }
-      else if (message.type === 'merged_response') {
-        const msg = message as MergedResponseMessage;
-        console.log('🔗 Merged response received:', msg.content, msg.error, msg.reasoning); 
-        const mergedResp = { content: msg.content, error: msg.error, reasoning: msg.reasoning };
-        setMergedResponse(mergedResp);
-        setIsLoading(false);
-        setStatusMessage(null); 
-        if (submissionDataRef.current) addTurnToConversation(submissionDataRef.current.prompt, submissionDataRef.current.files, responsesRef.current, mergedResp, submissionDataRef.current.selectedAgent); }
-      else if (message.type === 'system_error') {
-        const errorResponse = { content: `System Error: ${message.error}`, error: message.error }; 
-        setMergedResponse(errorResponse); 
-        setIsLoading(false); 
-        setStatusMessage(null); 
-        if (submissionDataRef.current) addTurnToConversation(submissionDataRef.current.prompt, submissionDataRef.current.files, responsesRef.current, errorResponse, submissionDataRef.current.selectedAgent); }
+      if (message.request_id !== currentRequestIdRef.current) return;
+      if (message.type === 'individual_response') { const msg = message as IndividualResponseMessage; setResponses(p => ({ ...p, [msg.agent_id]: { content: msg.content, error: msg.error } })); }
+      else if (message.type === 'merged_response') { const msg = message as MergedResponseMessage; const mergedResp = { content: msg.content, error: msg.error, reasoning: msg.reasoning }; setMergedResponse(mergedResp); setIsLoading(false); if (submissionDataRef.current) addTurnToConversation(submissionDataRef.current.prompt, submissionDataRef.current.files, responsesRef.current, mergedResp, submissionDataRef.current.selectedAgent); }
+      else if (message.type === 'system_error') { const errorResponse = { content: `System Error: ${message.error}`, error: message.error }; setMergedResponse(errorResponse); setIsLoading(false); if (submissionDataRef.current) addTurnToConversation(submissionDataRef.current.prompt, submissionDataRef.current.files, responsesRef.current, errorResponse, submissionDataRef.current.selectedAgent); }
     }, console.error, console.log);
     return () => { if (websocket.current) websocket.current.close(); };
   }, [currentSessionId, addTurnToConversation]);
@@ -326,20 +292,16 @@ const ConsolePage = () => {
   const handleToolSelect = (tool: Tool) => tool.action();
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    console.log("🚀 handleSubmit called", { isLoading, prompt: prompt.trim(), attachments: attachments.length });
-    if (e) {
-      e.preventDefault();
-      console.log("🛑 preventDefault called");
-    }
+    if (e) e.preventDefault();
     if (isLoading || (!prompt.trim() && attachments.length === 0)) return;
-    setIsLoading(true); setResponses({}); setMergedResponse(null); setStatusMessage("Sending prompt to AetherCore...");
+    setIsLoading(true); setResponses({}); setMergedResponse(null);
     const newRequestId = uuidv4(); setCurrentRequestId(newRequestId);
     submissionDataRef.current = { prompt, files: attachments.filter(a => a.type === 'file').map(a => a.data as File), selectedAgent };
     try {
       const attachedFilesPayload = await Promise.all(attachments.map(att => (att.type === 'file' && att.data instanceof File) ? uploadFile(att.data) : Promise.resolve({ type: att.type.split('_')[0], filename: att.name, size: att.size, contentType: att.contentType, data: att.data })));
       await submitPrompt(prompt, currentSessionId, newRequestId, selectedAgent.id !== 'merged' ? [selectedAgent.id] : null, attachedFilesPayload);
       setPrompt(''); setAttachments([]);
-    } catch (error: any) { setMergedResponse({ content: `Error: ${error.message}`, error: error.message }); setIsLoading(false); setStatusMessage(null);}
+    } catch (error: any) { setMergedResponse({ content: `Error: ${error.message}`, error: error.message }); setIsLoading(false); }
   };
 
   return (
@@ -363,24 +325,6 @@ const ConsolePage = () => {
             
             <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-900">
               <div className="max-w-4xl mx-auto">
-                {statusMessage && (
-                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg animate-in fade-in">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                      <span className="text-sm text-blue-700 dark:text-blue-300">{statusMessage}</span>
-                    </div>
-                  </div>
-                )}
-                {/* LOADING INDICATOR - ADD THIS TOO */}
-                {isLoading && !statusMessage && (
-                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg animate-in fade-in">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Processing your request...</span>
-                    </div>
-                  </div>
-                )}
-
                 <div className="mb-4 flex items-center justify-between">
                   <ToolDropdown tools={availableTools} onToolSelect={handleToolSelect} />
                 </div>

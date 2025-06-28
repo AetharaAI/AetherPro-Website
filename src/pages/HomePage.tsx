@@ -17,7 +17,7 @@ const HomePage = () => {
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
               Harness multiple AI models simultaneously. Get unified, intelligent responses 
-              that combine the best of OpenAI, Anthropic, Google, and more.
+              that combine the best of OpenAI, Anthropic, Google, and more with the worlds first AI Operating System.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

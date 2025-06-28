@@ -55,7 +55,11 @@ interface WebSocketMessageBase {
   agent_id?: string;
   error?: string;
   details?: any;
+  data?: any;
+  content?: string;
 }
+
+
 
 export interface IndividualResponseMessage extends WebSocketMessageBase {
   type: 'individual_response';
@@ -81,7 +85,38 @@ export interface SystemErrorMessage extends WebSocketMessageBase {
   details?: any;
 }
 
-export type WebSocketMessage = IndividualResponseMessage | MergedResponseMessage | SystemErrorMessage | WebSocketMessageBase;
+export interface ThinkingStatusMessage extends WebSocketMessageBase {
+  type: 'thinking_status';
+  request_id: string;
+  data: {
+    description: string;
+  };
+}
+
+export interface AgentThinkingMessage extends WebSocketMessageBase {
+  type: 'agent_thinking';
+  request_id: string;
+  agent_id: string;
+  content: string;
+}
+
+export interface AgentStreamingMessage extends WebSocketMessageBase {
+  type: 'agent_streaming';
+  request_id: string;
+  agent_id: string;
+  content: string;
+  
+}
+
+export interface MergedStreamingMessage extends WebSocketMessageBase {
+  type: 'merged_streaming';
+  request_id: string;
+  content: string;
+  reasoning?: string;
+}
+
+export type WebSocketMessage = IndividualResponseMessage | MergedResponseMessage | SystemErrorMessage | ThinkingStatusMessage | AgentThinkingMessage | AgentStreamingMessage | MergedStreamingMessage | WebSocketMessageBase;
+
 
 // --- Conversation Types ---
 
@@ -387,6 +422,11 @@ export const createWebSocketConnection = (
   ws.onmessage = (event) => {
     try {
       const data: WebSocketMessage = JSON.parse(event.data);
+      if (data.type === 'ping') {
+        console.log('Ping receied, sending pong...');
+        ws.send(JSON.stringify({ type: 'pong' }));
+        return;
+      }
       if (onMessage) onMessage(data);
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);

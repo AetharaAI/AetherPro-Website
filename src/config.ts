@@ -13,7 +13,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 // src/config.ts
-//export const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+// export const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aetherprotech.com';
 // You might also have a frontend base URL here if needed, e.g., for self-redirects
 export const FRONTEND_BASE_URL = import.meta.env.VITE_FRONTEND_BASE_URL || 'https:/www.aetherprotech.com';
