@@ -191,61 +191,20 @@ const ChatHistory = ({ conversation, availableAgents, streamingResponses, isStre
       if (index % 2 === 1) { const [lang, ...codeLines] = part.split('\n'); const code = codeLines.join('\n'); return (<div key={index} className="aetherpro-code rounded-lg overflow-hidden my-4"><div className="flex items-center justify-between px-4 py-2 bg-gray-800"><span className="text-sm text-gray-300">{lang || 'code'}</span><button onClick={() => navigator.clipboard.writeText(code)} className="p-1.5 text-gray-400 hover:text-white"><Copy className="w-4 h-4" /></button></div><pre className="p-4 text-sm overflow-x-auto"><code>{code}</code></pre></div>); }
       return <div key={index} className="whitespace-pre-wrap">{part}</div>;
     });
-    return (<div className="flex-1 space-y-6 p-6">{conversation.turns.map((turn, index) => (<div key={turn.id} className="space-y-4"><div className="flex justify-end"><div className="max-w-3xl bg-blue-600 text-white rounded-lg p-4"><div className="whitespace-pre-wrap">{turn.prompt}</div>{turn.files && turn.files.length > 0 && (<div className="mt-2 pt-2 border-t border-blue-500">{turn.files.map((file, i) => (<div key={i} className="text-xs">📎 {file.filename}</div>))}</div>)}<div className="text-xs text-blue-200 mt-2">{new Date(turn.timestamp).toLocaleString()}</div></div></div><div className="space-y-3">
-      {Object.entries(turn.responses).map(([agentId, response]) => { 
-        const agent = availableAgents.find(a => a.id === agentId); 
-        return (
-          <div key={agentId} className="dashboard-card rounded-lg p-4">
-            <h4 className="font-semibold mb-3 flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-              {agent?.name || agentId}
-              </h4>
-              <div className="prose dark:prose-invert max-w-none">
-                {response.error ? 
-                <p className="text-red-500">Error: {response.error}</p> : 
-                renderResponseContent(response.content)
-                }
-              </div>
-            </div>
-        );
-      })}
-      {responses && Object.entries(responses).map(([agentId, response]) => {
-        if (turn.responses[agentId]) return null;
-        const  agent = availableAgents.find(a => a.id === agentId);
-        const streamingContent = streamingResponses[agentId];
-        const isCurrentlyStreaming = isStreaming[agentId];
-        const displayContent = streamingContent || response.content;
-        if (!displayContent && !isCurrentlyStreaming) return null;
-        return (
-          <div key={`streaming-${agentId}`} className="dashboard-card rounded-lg p-4 border-2 border-blue-300 dark:border-blue-600">
-            <h4 className="font-semibold mb-3 flex items-center justify-between">
-              <div className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-2 ${isCurrentlyStreaming ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
-                {agent?.name || agentId}
-              </div>
-              {isCurrentlyStreaming && (
-                <div className="flex items-center space-x-2 text-sm text-blue-500">
-                  <div className="animate-pulse">●</div>
-                  <span>Streaming...</span>
-                </div>
-            )}
-            </h4>
-            <div className="prose dark:prose-invert max-w-none">
-              {response.error ? (
-                <p className="text-red-500">Error: {response.error}</p>
-              ) : (
-                <div>
-                  {renderResponseContent(displayContent)}
-                  {isCurrentlyStreaming && <span className="animate-pulse text-blue-500">▋</span>}
-                </div>
-              )}
-            </div>
+    return (<div className="flex-1 space-y-6 p-6">{conversation.turns.map((turn, index) => (<div key={turn.id} className="space-y-4"><div className="flex justify-end"><div className="max-w-3xl bg-blue-600 text-white rounded-lg p-4"><div className="whitespace-pre-wrap">{turn.prompt}</div>{turn.files && turn.files.length > 0 && (<div className="mt-2 pt-2 border-t border-blue-500">{turn.files.map((file, i) => (<div key={i} className="text-xs">📎 {file.filename}</div>))}</div>)}<div className="text-xs text-blue-200 mt-2">{new Date(turn.timestamp).toLocaleString()}</div></div></div><div className="space-y-3">{Object.entries(turn.responses).map(([agentId, response]) => { const agent = availableAgents.find(a => a.id === agentId); return (<div key={agentId} className="dashboard-card rounded-lg p-4"><h4 className="font-semibold mb-3 flex items-center"><div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>{agent?.name || agentId}</h4><div className="prose dark:prose-invert max-w-none">{response.error ? <p className="text-red-500">Error: {response.error}</p> : renderResponseContent(response.content)}</div></div>);})}{turn.mergedResponse && (<div className="border border-blue-300 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20"><h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">🔮 Orchestrated Response</h4><div className="prose dark:prose-invert max-w-none">{turn.mergedResponse.error ? <p className="text-red-500">Error: {turn.mergedResponse.error}</p> : renderResponseContent(turn.mergedResponse.content)}</div></div>)}</div>{index < conversation.turns.length - 1 && <hr className="border-gray-200 dark:border-gray-700" />}</div>))}</div>); {responses && Object.entries(responses).map(([agentId, response]) => {
+      const agent = availableAgents.find(a => a.id === agentId);
+      return (
+        <div key={agentId} className="dashboard-card rounded-lg p-4">
+          <h4 className="font-semibold mb-3 flex items-center">
+            <div className={`w-2 h-2 ${isStreaming[agentId] ? 'bg-yellow-500' : 'bg-green-500'} rounded-full mr-2`}></div>
+            {agent?.name || agentId}
+          </h4>
+          <div className="prose dark:prose-invert max-w-none">
+            {response.error ? <p className="text-red-500">Error: {response.error}</p> : renderResponseContent(response.content)}
           </div>
-        );
-      })}  
-      
-      {turn.mergedResponse && (<div className="border border-blue-300 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20"><h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">🔮 Orchestrated Response</h4><div className="prose dark:prose-invert max-w-none">{turn.mergedResponse.error ? <p className="text-red-500">Error: {turn.mergedResponse.error}</p> : renderResponseContent(turn.mergedResponse.content)}</div></div>)}</div>{index < conversation.turns.length - 1 && <hr className="border-gray-200 dark:border-gray-700" />}</div>))}</div>);
-
+        </div>
+      );
+    }
 };
 
 const FileUploadZone = ({ files, setFiles, isDragOver, setIsDragOver }: { files: Attachment[]; setFiles: React.Dispatch<React.SetStateAction<Attachment[]>>; isDragOver: boolean; setIsDragOver: React.Dispatch<React.SetStateAction<boolean>>; }) => {
@@ -362,7 +321,7 @@ const ConsolePage = () => {
       
         // Only handle if it's for the current request
         if (msg.request_id === currentRequestIdRef.current) {
-          console.log('🔄 Chunk received from:', msg.agent_id, '- chunk:', msg.chunk.length);
+          console.log('🔄 Chunk received from:', msg.agent_id, '- chunk:', msg.chunk);
         
           // Append chunk to the streaming response for this agent
           setStreamingResponses(prev => ({
@@ -459,7 +418,7 @@ const ConsolePage = () => {
           />
           <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <ChatHistory conversation={currentConversation} availableAgents={availableAgents} streamingResponses={streamingResponses} isStreaming={isStreaming} responses={responses}/>
+              <ChatHistory conversation={currentConversation} availableAgents={availableAgents} />
             </div>
             
             <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-900">

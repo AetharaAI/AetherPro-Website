@@ -37,6 +37,7 @@ export interface ModuleInfo {
   status?: string; // e.g., 'RUNNING', 'STOPPED'
   description?: string;
   version?: string;
+  state?: string; // e.g., 'active', 'inactive'
 }
 
 // Attached file info sent to backend
@@ -100,6 +101,21 @@ export interface AgentThinkingMessage extends WebSocketMessageBase {
   content: string;
 }
 
+export interface StreamingStartedMessage extends WebSocketMessageBase {
+  type: 'streaming_started';
+  request_id: string;
+  agent_id: string;
+  timestamp: number;
+}
+
+export interface ResponseChunkMessage extends WebSocketMessageBase {
+  type: 'response_chunk';
+  request_id: string;
+  agent_id: string;
+  chunk: string;
+  timestamp: string;
+}
+
 export interface AgentStreamingMessage extends WebSocketMessageBase {
   type: 'agent_streaming';
   request_id: string;
@@ -115,7 +131,7 @@ export interface MergedStreamingMessage extends WebSocketMessageBase {
   reasoning?: string;
 }
 
-export type WebSocketMessage = IndividualResponseMessage | MergedResponseMessage | SystemErrorMessage | ThinkingStatusMessage | AgentThinkingMessage | AgentStreamingMessage | MergedStreamingMessage | WebSocketMessageBase;
+export type WebSocketMessage = IndividualResponseMessage | MergedResponseMessage | SystemErrorMessage | ThinkingStatusMessage | AgentThinkingMessage | AgentStreamingMessage | MergedStreamingMessage | StreamingStartedMessage | ResponseChunkMessage | WebSocketMessageBase;
 
 
 // --- Conversation Types ---
